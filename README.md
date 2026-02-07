@@ -1,6 +1,6 @@
 # 🔥 SparkGuard
 
-**AI-powered fire prevention and emergency response decision support — unifying satellite intelligence, drone reconnaissance, and actionable guidance for first responders.**
+**AI-powered fire prevention and emergency response decision support — unifying satellite intelligence and actionable guidance for first responders.**
 
 ---
 
@@ -26,7 +26,7 @@
 
 Wildfires and structural fires cause billions in damage, claim lives, and overwhelm emergency services every year. Current response systems rely on fragmented data, delayed satellite imagery, and manual coordination.
 
-**SparkGuard** is a unified platform that ingests existing satellite-derived data (including CubeSat sources), supplements gaps with optional drone reconnaissance, and delivers AI-assisted decision support to emergency responders. Instead of raw data dumps, we generate structured **incident packages** — actionable briefs with location context, weather conditions, recommended response actions, and visual overlays — so teams can act faster and smarter.
+**SparkGuard** is a unified platform that ingests existing satellite-derived data (including CubeSat sources) and delivers AI-assisted decision support to emergency responders. Instead of raw data dumps, we generate structured **incident packages** — actionable briefs with location context, weather conditions, recommended response actions, and visual overlays — so teams can act faster and smarter.
 
 Built for the **Upstart Competition (GCES Concordia)** under the themes of **Health & Wellness** and **Smart Systems**.
 
@@ -39,7 +39,6 @@ Built for the **Upstart Competition (GCES Concordia)** under the themes of **Hea
 - **Delayed detection**: Satellite revisit times can miss fast-moving fires; ground reports are often too late.
 - **Fragmented data**: Weather, terrain, satellite imagery, and local intel exist in silos — responders must manually piece together situational awareness.
 - **Information overload**: Raw feeds without interpretation slow decision-making during critical windows.
-- **Blind spots**: Satellites lack detail for indoor fires, tunnels, dense urban canyons, and isolated environments.
 
 ### Who Is Affected
 
@@ -54,7 +53,6 @@ Built for the **Upstart Competition (GCES Concordia)** under the themes of **Hea
 
 - Emergency budgets are tight; solutions must leverage **existing infrastructure**.
 - First responders need **simple outputs**, not dashboards requiring training.
-- Drone operations face regulatory, connectivity, and safety limitations.
 
 ---
 
@@ -63,17 +61,15 @@ Built for the **Upstart Competition (GCES Concordia)** under the themes of **Hea
 SparkGuard is a **software platform** that:
 
 1. **Ingests** publicly available and commercial satellite-derived data (thermal anomalies, hotspot feeds, imagery).
-2. **Supplements** with optional drone data for localized scenes where satellites lack resolution or access.
-3. **Processes** incoming data through analytics pipelines to detect, classify, and contextualize fire events.
-4. **Generates** structured incident packages with recommended actions, wind/weather context, and visual overlays.
-5. **Distributes** packages to emergency services via configurable channels (email, SMS, webhook, exportable briefs).
+2. **Processes** incoming data through analytics pipelines to detect, classify, and contextualize fire events.
+3. **Generates** structured incident packages with recommended actions, wind/weather context, and visual overlays.
+4. **Distributes** packages to emergency services via configurable channels (email, SMS, webhook, exportable briefs).
 
 ### What the Prototype Demonstrates
 
 - End-to-end data flow from ingestion to alert generation (simulated feeds).
 - Dashboard UI for viewing active incidents and drilling into details.
 - Sample incident package with recommended actions.
-- Drone data upload flow and integration concept.
 
 ---
 
@@ -83,11 +79,6 @@ SparkGuard is a **software platform** that:
 - Ingest thermal anomaly and hotspot data from existing satellite feeds
 - Support for CubeSat-class data sources with higher revisit frequencies
 - Automated parsing of standard fire detection formats (e.g., FIRMS-compatible)
-
-### 🚁 Drone Assistance
-- Upload portal for drone-captured imagery, video, and thermal data
-- Designed for scenarios where satellites lack detail: tunnels, building interiors, dense urban areas
-- Feeds directly into platform for enhanced situational awareness
 
 ### 🧠 Decision Support
 - AI-assisted interpretation of multi-source data
@@ -105,7 +96,7 @@ SparkGuard is a **software platform** that:
 
 **Step-by-step pipeline from data ingestion to dispatch:**
 
-1. **Ingest** — Satellite feeds (thermal, imagery) and optional drone uploads
+1. **Ingest** — Satellite feeds (thermal, imagery, hotspots)
 2. **Normalize** — Align data formats, georeference, and timestamps
 3. **Enrich** — Add weather/wind data, terrain, and infrastructure context
 4. **Analyze** — AI models classify events, estimate severity, and predict spread
@@ -122,21 +113,6 @@ SparkGuard is a **software platform** that:
 - **Satellite Imagery**: Earth observation providers (public and commercial)
 - **Weather/Wind**: Standard weather APIs
 - **Outputs**: Email/SMS alerts, exportable incident briefs, webhook integrations
-
----
-
-## 🚁 Drone Concept for Local Scenarios
-
-Drones supplement satellite data where orbital sensors lack detail or access:
-
-- Indoor/structural fires and tunnels
-- Dense urban areas
-- Remote locations with infrequent satellite coverage
-- Rapid scene updates when fresher imagery is needed
-
-**How it works:** Operator dispatches drone → captures imagery/thermal data → uploads to platform → data fuses with satellite context → incident package updated.
-
-> *All drone operations require human operators and must comply with local regulations.*
 
 ---
 
@@ -161,13 +137,11 @@ Drones supplement satellite data where orbital sensors lack detail or access:
 **What's included:**
 - Dashboard UI (clickable mockup / functional prototype)
 - Sample incident package with mock data
-- Drone upload flow concept
 - Alerting interface designs
 
 **What's simulated:**
 - Satellite data feeds (using sample/historical data)
 - AI model outputs (demonstration mode)
-- Drone imagery (sample data)
 
 > *Prototype demonstrates end-to-end concept and UX — not production-grade systems.*
 
@@ -232,16 +206,14 @@ cd SparkGuard
 | **1** | Finalize prototype UI and sample data flows |
 | **2** | Integrate one live public fire/hotspot feed (e.g., FIRMS) |
 | **3** | Develop lightweight ML model for severity classification |
-| **4** | Build drone upload pipeline with mobile app |
-| **5** | Pilot with partner fire department (mock exercises) |
-| **6** | Add multi-language alerting and accessibility features |
+| **4** | Pilot with partner fire department (mock exercises) |
+| **5** | Add multi-language alerting and accessibility features |
 
 ---
 
 ## ⚠️ Risks, Ethics, Privacy & Compliance
 
-- **Privacy**: Drone imagery reviewed before ingestion; configurable data retention; role-based access controls
-- **Drone regulation**: All operations must comply with local aviation rules; human operators required
+- **Privacy**: Configurable data retention; role-based access controls
 - **Security**: Data encrypted in transit; authentication required for all access
 - **Ethics**: AI is advisory only — humans retain full decision authority; system augments, not replaces, professional judgment
 
@@ -284,9 +256,8 @@ cd SparkGuard
 SparkGuard is designed around **existing, accessible infrastructure**:
 
 1. **Public satellite data is available today** — NASA FIRMS, Sentinel, and others provide free or low-cost fire detection feeds.
-2. **Drone hardware is commodity** — off-the-shelf drones with cameras and thermal sensors are widely available.
-3. **Modular integrations** — the platform connects to external systems via standard APIs and export formats, minimizing custom development.
-4. **AI is assistive, not autonomous** — we use proven classification techniques with human oversight, avoiding regulatory and liability complexity of fully autonomous systems.
+2. **Modular integrations** — the platform connects to external systems via standard APIs and export formats, minimizing custom development.
+3. **AI is assistive, not autonomous** — we use proven classification techniques with human oversight, avoiding regulatory and liability complexity of fully autonomous systems.
 
 The core innovation is **integration and interpretation** — bringing fragmented data into a unified view and translating it into actionable guidance for responders.
 
