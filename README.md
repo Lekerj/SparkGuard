@@ -4,25 +4,24 @@
 
 ---
 
-## 📌 Quick Links
+## Quick Links
 
 | Section | Jump |
 |---------|------|
-| [Elevator Pitch](#-elevator-pitch) | What we do in 30 seconds |
-| [Problem](#-problem) | Why this matters |
-| [Solution](#-solution-overview) | What we built |
-| [Key Features](#-key-features) | Capabilities at a glance |
-| [How It Works](#-how-it-works) | End-to-end pipeline |
-| [AI Decision Support](#-ai-decision-support) | Human + AI collaboration |
-| [Prototype Scope](#-prototype-scope) | What's in the demo |
-| [Business Model](#-business-model-snapshot) | Path to market |
-| [Getting Started](#-getting-started) | Run it yourself |
+| [Elevator Pitch](#elevator-pitch) | What we do in 30 seconds |
+| [Problem](#problem) | Why this matters |
+| [Solution](#solution-overview) | What we built |
+| [Key Features](#key-features) | Capabilities at a glance |
+| [How It Works](#how-it-works) | End-to-end pipeline |
+| [AI Decision Support](#ai-decision-support) | Human + AI collaboration |
+| [Prototype Scope](#prototype-scope) | What's in the demo |
+| [Business Model](#business-model-snapshot) | Path to market |
 
 **Deliverables:** [Pitch Deck][PITCH_DECK_LINK] · [Business Model Canvas][BMC_LINK] · [Prototype Demo][DEMO_LINK]
 
 ---
 
-## 🚀 Elevator Pitch
+## Elevator Pitch
 
 Wildfires and structural fires cause billions in damage, claim lives, and overwhelm emergency services every year. Current response systems rely on fragmented data, delayed satellite imagery, and manual coordination.
 
@@ -32,7 +31,7 @@ Built for the **Upstart Competition (GCES Concordia)** under the themes of **Hea
 
 ---
 
-## 🔴 Problem
+## Problem
 
 ### Why It Matters
 
@@ -56,7 +55,7 @@ Built for the **Upstart Competition (GCES Concordia)** under the themes of **Hea
 
 ---
 
-## 💡 Solution Overview
+## Solution Overview
 
 SparkGuard is a **software platform** that:
 
@@ -73,7 +72,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 ### 🛰️ Satellite Intelligence
 - Ingest thermal anomaly and hotspot data from existing satellite feeds
@@ -92,7 +91,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 **Step-by-step pipeline from data ingestion to dispatch:**
 
@@ -105,7 +104,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 📡 Data Sources & Integrations
+## Data Sources & Integrations
 
 > *Examples of compatible data sources — actual feeds depend on availability and project scope.*
 
@@ -116,7 +115,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 🤖 AI Decision Support
+## AI Decision Support
 
 **What the AI does:**
 - Detects and classifies fire events from multi-source data
@@ -132,7 +131,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 🧪 Prototype Scope
+## Prototype Scope
 
 **What's included:**
 - Dashboard UI (clickable mockup / functional prototype)
@@ -147,7 +146,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 🌍 Impact & Sustainability
+## Impact & Sustainability
 
 ### Health & Wellness
 
@@ -165,7 +164,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 💼 Business Model Snapshot
+## Business Model Snapshot
 
 **Customer segments:**
 - Municipal and regional fire departments
@@ -182,7 +181,7 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## ⚠️ Risks, Ethics, Privacy & Compliance
+## Risks, Ethics, Privacy & Compliance
 
 - **Privacy**: Configurable data retention; role-based access controls
 - **Security**: Data encrypted in transit; authentication required for all access
@@ -190,23 +189,23 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 👥 Team
+## Team
 
 | Name | Role |
 |------|------|
-| [TEAM_MEMBER_1] | [Software Developper] |
-| [TEAM_MEMBER_2] | [Software Developper] |
-| [TEAM_MEMBER_3] | [Software Developper] |
+| [TEAM_MEMBER_1] | Software Developer |
+| [TEAM_MEMBER_2] | Software Developer |
+| [TEAM_MEMBER_3] | Software Developer |
 
 ---
 
-## 📜 License
+## License
 
 MIT
 
 ---
 
-## 📬 Contact / Demo
+## Contact / Demo
 
 | Resource | Link |
 |----------|------|
@@ -218,7 +217,7 @@ MIT
 
 ---
 
-## 💡 Why This Is Feasible
+## Why This Is Feasible
 
 SparkGuard is designed around **existing, accessible infrastructure**:
 
@@ -239,3 +238,4 @@ The core innovation is **integration and interpretation** — bringing fragmente
 [PITCH_DECK_LINK]: #
 [BMC_LINK]: #
 [FIGMA_LINK]: #
+[CONTACT_EMAIL]: mailto:contact@example.com
