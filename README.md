@@ -13,7 +13,6 @@
 | [Solution](#-solution-overview) | What we built |
 | [Key Features](#-key-features) | Capabilities at a glance |
 | [How It Works](#-how-it-works) | End-to-end pipeline |
-| [Architecture](#-system-architecture) | Technical diagram |
 | [AI Decision Support](#-ai-decision-support) | Human + AI collaboration |
 | [Prototype Scope](#-prototype-scope) | What's in the demo |
 | [Business Model](#-business-model-snapshot) | Path to market |
@@ -106,212 +105,71 @@ SparkGuard is a **software platform** that:
 
 **Step-by-step pipeline from data ingestion to dispatch:**
 
-| Step | Action | Output |
-|------|--------|--------|
-| 1️⃣ | **Ingest** satellite feeds (thermal, imagery) and optional drone uploads | Raw data in queue |
-| 2️⃣ | **Normalize** data formats, georeference, timestamp alignment | Unified event records |
-| 3️⃣ | **Enrich** with weather/wind data, terrain, infrastructure proximity | Contextualized events |
-| 4️⃣ | **Analyze** via ML models for classification, spread prediction, severity | Model outputs + confidence |
-| 5️⃣ | **Decide** — AI surfaces recommendations; human reviews and approves | Draft incident package |
-| 6️⃣ | **Dispatch** — finalized package sent via configured channels | Alert delivered |
-
-```mermaid
-flowchart LR
-    subgraph Ingestion
-        A[Satellite Feeds] --> D[Data Queue]
-        B[Drone Uploads] --> D
-        C[Weather APIs] --> D
-    end
-
-    subgraph Processing
-        D --> E[Normalization & ETL]
-        E --> F[Enrichment Layer]
-        F --> G[ML Inference]
-    end
-
-    subgraph Decision
-        G --> H[Decision Engine]
-        H --> I[Human Review]
-    end
-
-    subgraph Output
-        I --> J[Incident Package]
-        J --> K[Alerting & Dispatch]
-        J --> L[Dashboard UI]
-    end
-```
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-graph TB
-    subgraph External Data Sources
-        SAT[Satellite Data Providers]
-        DRONE[Drone Uploader]
-        WEATHER[Weather & Wind APIs]
-        GEO[Geospatial Databases]
-    end
-
-    subgraph SparkGuard Platform
-        INGEST[Ingestion Service]
-        ETL[Processing & ETL]
-        STORE[(Data Storage)]
-        ML[Model Inference Service]
-        ENGINE[Decision Engine]
-        ALERT[Alerting & Integrations]
-        UI[Dashboard UI]
-    end
-
-    subgraph Outputs
-        EMAIL[Email / SMS]
-        WEBHOOK[Webhook / API]
-        BRIEF[Exportable Incident Brief]
-    end
-
-    SAT --> INGEST
-    DRONE --> INGEST
-    WEATHER --> ETL
-    GEO --> ETL
-
-    INGEST --> ETL
-    ETL --> STORE
-    STORE --> ML
-    ML --> ENGINE
-    ENGINE --> ALERT
-    ENGINE --> UI
-
-    ALERT --> EMAIL
-    ALERT --> WEBHOOK
-    ALERT --> BRIEF
-
-    UI --> BRIEF
-```
-
-### Component Summary
-
-| Component | Responsibility |
-|-----------|----------------|
-| **Ingestion Service** | Connects to external feeds, handles drone uploads, queues incoming data |
-| **Processing & ETL** | Normalizes formats, enriches with weather/terrain, prepares for analysis |
-| **Data Storage** | Persists raw and processed data, incident history, model outputs |
-| **Model Inference** | Runs classification, severity estimation, spread prediction models |
-| **Decision Engine** | Synthesizes model outputs into recommendations, manages human review flow |
-| **Alerting & Integrations** | Dispatches incident packages via configured channels |
-| **Dashboard UI** | Operator interface for monitoring, review, and manual overrides |
+1. **Ingest** — Satellite feeds (thermal, imagery) and optional drone uploads
+2. **Normalize** — Align data formats, georeference, and timestamps
+3. **Enrich** — Add weather/wind data, terrain, and infrastructure context
+4. **Analyze** — AI models classify events, estimate severity, and predict spread
+5. **Decide** — AI surfaces recommendations; human reviews and approves
+6. **Dispatch** — Finalized incident package sent to responders
 
 ---
 
 ## 📡 Data Sources & Integrations
 
-### Planned / Compatible Sources
+> *Examples of compatible data sources — actual feeds depend on availability and project scope.*
 
-> ⚠️ *The following are examples of compatible data sources — not confirmed integrations. Actual feeds will depend on availability, licensing, and project scope.*
-
-| Category | Example Sources |
-|----------|-----------------|
-| **Fire/Hotspot Feeds** | NASA FIRMS, NOAA Hazard Mapping System, ESA Active Fire Data |
-| **Satellite Imagery** | Sentinel-2, Landsat, commercial CubeSat providers (e.g., Planet Labs) |
-| **Weather/Wind** | OpenWeatherMap, Environment Canada, NOAA GFS |
-| **Geospatial/Infrastructure** | OpenStreetMap, municipal GIS layers |
-
-### Emergency Services Integrations
-
-SparkGuard is designed with **interface flexibility** — we do not claim live integrations, but the platform supports:
-
-- **Email/SMS**: Configurable alert distribution to dispatch centers or individuals.
-- **Webhook/API**: Push incident data to existing CAD (Computer-Aided Dispatch) systems.
-- **Exportable Incident Brief**: PDF or structured JSON package for manual handoff.
-
-*Integration depth depends on partnership and compliance requirements.*
+- **Fire/Hotspot Feeds**: Public satellite fire detection services
+- **Satellite Imagery**: Earth observation providers (public and commercial)
+- **Weather/Wind**: Standard weather APIs
+- **Outputs**: Email/SMS alerts, exportable incident briefs, webhook integrations
 
 ---
 
 ## 🚁 Drone Concept for Local Scenarios
 
-### When Drones Are Used
+Drones supplement satellite data where orbital sensors lack detail or access:
 
-Drones supplement satellite data in scenarios where orbital sensors lack detail or access:
+- Indoor/structural fires and tunnels
+- Dense urban areas
+- Remote locations with infrequent satellite coverage
+- Rapid scene updates when fresher imagery is needed
 
-- **Indoor/structural fires**: Satellites cannot see inside buildings or tunnels.
-- **Dense urban canyons**: Tall buildings obstruct satellite line-of-sight.
-- **Isolated environments**: Remote areas with infrequent satellite coverage.
-- **Rapid scene updates**: When fresher imagery is needed faster than satellite revisit times.
+**How it works:** Operator dispatches drone → captures imagery/thermal data → uploads to platform → data fuses with satellite context → incident package updated.
 
-### How It Works
-
-1. **Tasking**: Operator dispatches drone to incident area (manual or suggested by platform).
-2. **Data Collection**: Drone captures images, video, and thermal data (if equipped).
-3. **Upload/Streaming**: Data is uploaded via mobile app or streamed over available connectivity.
-4. **Platform Integration**: SparkGuard ingests drone data, fuses with satellite context, updates incident package.
-
-### Constraints & Considerations
-
-| Constraint | Mitigation |
-|------------|------------|
-| **Indoor/tunnel navigation** | GPS-denied navigation is challenging; designed for entry points and exteriors unless specialized equipment available |
-| **Connectivity** | Store-and-forward mode for low-bandwidth areas; streaming requires stable link |
-| **Safety** | No autonomous operations in active fire zones; operator-in-the-loop required |
-| **Regulation** | Operations must comply with local drone regulations (see [Risks & Compliance](#-risks-ethics-privacy--compliance)) |
+> *All drone operations require human operators and must comply with local regulations.*
 
 ---
 
 ## 🤖 AI Decision Support
 
-### What the AI Does
+**What the AI does:**
+- Detects and classifies fire events from multi-source data
+- Estimates severity and potential spread
+- Generates draft recommendations with confidence scores
 
-- **Detects and classifies** fire events from multi-source data.
-- **Estimates severity** and potential spread based on weather, terrain, fuel load.
-- **Queries contextual databases** (infrastructure proximity, evacuation routes, historical incidents).
-- **Generates draft recommendations** — not final orders.
+**What humans decide:**
+- Approval of incident packages before dispatch
+- Override or adjust recommendations based on local knowledge
+- Final dispatch authority always remains with emergency personnel
 
-### What Humans Decide
-
-- **Approval of incident packages** before dispatch.
-- **Override or adjust** AI recommendations based on local knowledge.
-- **Final dispatch authority** remains with emergency personnel.
-
-### Human-in-the-Loop Design
-
-```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  AI Model   │ ──▶  │  Confidence │ ──▶  │   Human     │
-│  Output     │      │  Scoring    │      │   Review    │
-└─────────────┘      └─────────────┘      └─────────────┘
-                            │
-                            ▼
-                   Low confidence?
-                   ──▶ Flag for manual triage
-```
-
-- **Confidence/uncertainty** is surfaced for every recommendation.
-- **False positive minimization**: Thresholds tuned to avoid alert fatigue; low-confidence events routed to human review rather than auto-dispatched.
-- **Explainability**: Key factors behind each recommendation are displayed (wind direction, proximity to structures, etc.).
+> **Human-in-the-loop**: AI recommendations are advisory only. Low-confidence events are flagged for manual review. Humans retain full decision authority.
 
 ---
 
 ## 🧪 Prototype Scope
 
-### What's Included
+**What's included:**
+- Dashboard UI (clickable mockup / functional prototype)
+- Sample incident package with mock data
+- Drone upload flow concept
+- Alerting interface designs
 
-| Component | Status |
-|-----------|--------|
-| Dashboard UI | Clickable mockup / functional prototype |
-| Incident package generator | Sample output with mock data |
-| Data ingestion pipeline | Simulated feeds (not live satellite connection) |
-| Drone upload flow | UI concept and sample data path |
-| Alerting integrations | Interface design (email/webhook templates) |
+**What's simulated:**
+- Satellite data feeds (using sample/historical data)
+- AI model outputs (demonstration mode)
+- Drone imagery (sample data)
 
-### What's Simulated vs. Real
-
-| Simulated | Real / Functional |
-|-----------|-------------------|
-| Satellite data feeds (using sample/historical data) | UI and user flows |
-| ML model inference (canned outputs or lightweight demo model) | Incident package structure and export |
-| Drone data (sample imagery) | System architecture and data flow design |
-
-> *Prototype is designed to demonstrate end-to-end concept and UX — not production-grade data pipelines.*
+> *Prototype demonstrates end-to-end concept and UX — not production-grade systems.*
 
 ---
 
@@ -335,63 +193,35 @@ Drones supplement satellite data in scenarios where orbital sensors lack detail 
 
 ## 💼 Business Model Snapshot
 
-### Customer Segments
+**Customer segments:**
+- Municipal and regional fire departments
+- Emergency management agencies
+- Forestry and wildfire services
+- Industrial operators in fire-prone areas
 
-| Segment | Description |
-|---------|-------------|
-| Municipal fire departments | Primary users of incident packages and dashboard |
-| Regional emergency management agencies | Coordination and oversight |
-| Forestry and wildfire agencies | Large-area monitoring and prevention |
-| Industrial operators | Facilities in fire-prone or remote areas |
+**Value proposition:**
+- Unified situational awareness from fragmented data
+- Actionable outputs tailored for responders
+- Modular integration with existing systems
 
-### Value Proposition
-
-- **Unified situational awareness** from fragmented data sources.
-- **Actionable outputs** (not just raw data) tailored for responders.
-- **Modular integration** with existing CAD and communication systems.
-
-### Pricing / Revenue Options
-
-> *Options under consideration — not finalized.*
-
-| Model | Description |
-|-------|-------------|
-| **SaaS subscription** | Tiered by coverage area, data sources, and user seats |
-| **Per-incident fee** | Pay-per-use for smaller departments or seasonal needs |
-| **Enterprise license** | Flat annual fee for large agencies with custom integrations |
-| **Data marketplace** | Optional premium data layers (commercial satellite, drone networks) |
+**Revenue options** *(under consideration)*: SaaS subscription, per-incident pricing, enterprise licenses
 
 ---
 
 ## 🛠️ Getting Started
 
-### A) If You Have the Codebase
+**View the prototype:**
+1. [Live Demo][DEMO_LINK]
+2. [Figma Mockups][FIGMA_LINK]
+3. [Pitch Deck][PITCH_DECK_LINK]
 
-> *Tech stack: [TECH_STACK_IF_KNOWN — TBD]*
-
+**Run locally** *(if codebase available)*:
 ```bash
-# Clone the repository
-git clone https://github.com/[REPO_PATH]/SparkGuard.git
+git clone [REPO_URL]
 cd SparkGuard
-
-# Install dependencies (placeholder — adjust for actual stack)
 [INSTALL_COMMAND]
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with API keys and configuration
-
-# Run the application
 [RUN_COMMAND]
 ```
-
-*Replace `[INSTALL_COMMAND]` and `[RUN_COMMAND]` with actual commands once stack is finalized (e.g., `npm install` / `npm run dev` for Node.js, `pip install -r requirements.txt` / `python main.py` for Python).*
-
-### B) If You Only Have the Prototype
-
-1. **View the mockups**: [Figma Link][FIGMA_LINK]
-2. **Watch the demo walkthrough**: [Demo Video][DEMO_LINK]
-3. **Review sample outputs**: See `/samples/` folder for example incident packages and data flows.
 
 ---
 
@@ -410,33 +240,10 @@ cp .env.example .env
 
 ## ⚠️ Risks, Ethics, Privacy & Compliance
 
-### Privacy
-
-| Concern | Mitigation |
-|---------|------------|
-| **Imagery of people/homes** | Satellite resolution typically insufficient for PII; drone imagery reviewed before ingestion; faces/plates blurred if detected |
-| **Data retention** | Configurable retention policies; incident data purged after defined period unless required for reporting |
-| **Access control** | Role-based access; audit logs for all data views and exports |
-
-### Drone Regulation
-
-> ⚠️ *This is general guidance, not legal advice.*
-
-- Drone operations must comply with local aviation authority regulations (e.g., Transport Canada RPAS rules, FAA Part 107 in the US).
-- Operations in emergency zones may require special authorization or coordination with incident command.
-- Operator certification and airspace awareness are required.
-
-### Security
-
-- All data in transit encrypted (TLS).
-- Authentication required for dashboard and API access.
-- Third-party integrations use scoped API keys with least-privilege principles.
-
-### Ethics
-
-- AI recommendations are **advisory only** — humans retain decision authority.
-- System designed to **augment, not replace** professional judgment.
-- Transparency: factors behind recommendations are always visible.
+- **Privacy**: Drone imagery reviewed before ingestion; configurable data retention; role-based access controls
+- **Drone regulation**: All operations must comply with local aviation rules; human operators required
+- **Security**: Data encrypted in transit; authentication required for all access
+- **Ethics**: AI is advisory only — humans retain full decision authority; system augments, not replaces, professional judgment
 
 ---
 
