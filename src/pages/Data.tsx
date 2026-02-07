@@ -3,7 +3,6 @@ import {
   Satellite,
   ThermometerSun,
   Wind,
-  Droplets,
   Mountain,
   Building,
   Cloud,
