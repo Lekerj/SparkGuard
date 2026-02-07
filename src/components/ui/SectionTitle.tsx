@@ -7,6 +7,8 @@ interface SectionTitleProps {
   badge?: ReactNode
   align?: 'left' | 'center'
   className?: string
+  titleClassName?: string
+  subtitleClassName?: string
 }
 
 export default function SectionTitle({
@@ -15,6 +17,8 @@ export default function SectionTitle({
   badge,
   align = 'center',
   className = '',
+  titleClassName = '',
+  subtitleClassName = '',
 }: SectionTitleProps) {
   return (
     <motion.div
@@ -29,11 +33,11 @@ export default function SectionTitle({
       `}
     >
       {badge && <div className="mb-4">{badge}</div>}
-      <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-4 text-balance">
+      <h2 className={`text-3xl sm:text-4xl font-bold text-neutral-900 mb-4 text-balance ${titleClassName}`}>
         {title}
       </h2>
       {subtitle && (
-        <p className="text-lg text-neutral-600 max-w-2xl mx-auto text-balance">
+        <p className={`text-lg text-neutral-600 max-w-2xl mx-auto text-balance ${subtitleClassName}`}>
           {subtitle}
         </p>
       )}

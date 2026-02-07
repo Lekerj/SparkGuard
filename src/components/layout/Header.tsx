@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Download, Play, Flame, Shield } from 'lucide-react'
-import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
+import { Menu, X, Flame, Shield } from 'lucide-react'
 import Container from './Container'
 
 const navLinks = [
   { to: '/', label: 'Home' },
-  { to: '/product', label: 'Product' },
-  { to: '/data', label: 'Data Sources' },
-  { to: '/demo', label: 'Demo' },
   { to: '/team', label: 'Team' },
-  { to: '/contact', label: 'Contact' },
 ]
 
 export default function Header() {
@@ -54,13 +48,13 @@ export default function Header() {
           <Link
             to="/"
             className="flex items-center gap-2 text-neutral-900 hover:text-primary-600 transition-colors"
-            aria-label="SparkGuard - Home"
+            aria-label="SafeGuard - Home"
           >
             <div className="relative w-8 h-8">
               <Shield className="w-8 h-8 text-secondary-600" />
               <Flame className="w-4 h-4 text-primary-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(40%+3px)]" />
             </div>
-            <span className="text-xl font-bold">SparkGuard</span>
+            <span className="text-xl font-bold">SafeGuard</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -80,26 +74,6 @@ export default function Header() {
                 {link.label}
               </NavLink>
             ))}
-          </div>
-
-          {/* Desktop CTAs */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Badge variant="demo" size="sm">
-              Demo Mode
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={Download}
-              onClick={() => alert('Placeholder: Download Pitch Deck')}
-            >
-              Pitch Deck
-            </Button>
-            <Link to="/demo">
-              <Button variant="primary" size="sm" icon={Play}>
-                View Demo
-              </Button>
-            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -148,21 +122,6 @@ export default function Header() {
                 ))}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-neutral-200 flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  icon={Download}
-                  onClick={() => alert('Placeholder: Download Pitch Deck')}
-                  className="w-full justify-center"
-                >
-                  Download Pitch Deck
-                </Button>
-                <Link to="/demo" className="w-full">
-                  <Button variant="primary" icon={Play} className="w-full justify-center">
-                    View Demo
-                  </Button>
-                </Link>
-              </div>
             </Container>
           </motion.div>
         )}
