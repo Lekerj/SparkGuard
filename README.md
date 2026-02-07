@@ -182,35 +182,6 @@ SparkGuard is a **software platform** that:
 
 ---
 
-## 🛠️ Getting Started
-
-**View the prototype:**
-1. [Live Demo][DEMO_LINK]
-2. [Figma Mockups][FIGMA_LINK]
-3. [Pitch Deck][PITCH_DECK_LINK]
-
-**Run locally** *(if codebase available)*:
-```bash
-git clone [REPO_URL]
-cd SparkGuard
-[INSTALL_COMMAND]
-[RUN_COMMAND]
-```
-
----
-
-## 🗺️ Roadmap
-
-| Phase | Milestone |
-|-------|-----------|
-| **1** | Finalize prototype UI and sample data flows |
-| **2** | Integrate one live public fire/hotspot feed (e.g., FIRMS) |
-| **3** | Develop lightweight ML model for severity classification |
-| **4** | Pilot with partner fire department (mock exercises) |
-| **5** | Add multi-language alerting and accessibility features |
-
----
-
 ## ⚠️ Risks, Ethics, Privacy & Compliance
 
 - **Privacy**: Configurable data retention; role-based access controls
@@ -223,19 +194,15 @@ cd SparkGuard
 
 | Name | Role |
 |------|------|
-| [TEAM_MEMBER_1] | [Role — e.g., Project Lead] |
-| [TEAM_MEMBER_2] | [Role — e.g., Backend Developer] |
-| [TEAM_MEMBER_3] | [Role — e.g., ML Engineer] |
-| [TEAM_MEMBER_4] | [Role — e.g., UI/UX Designer] |
-| [TEAM_MEMBER_5] | [Role — e.g., Business & Strategy] |
-
-*Team composition placeholder — update with actual names and roles.*
+| [TEAM_MEMBER_1] | [Software Developper] |
+| [TEAM_MEMBER_2] | [Software Developper] |
+| [TEAM_MEMBER_3] | [Software Developper] |
 
 ---
 
 ## 📜 License
 
-**TBD** — License to be determined. See [LICENSE](LICENSE) file once finalized.
+MIT
 
 ---
 
