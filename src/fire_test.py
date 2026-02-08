@@ -3,8 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+# Import the wildfire analyzer
+from wildfire_analyzer import analyze_wildfire_image
+
 # Path to your test image
-IMAGE_PATH = Path(__file__).resolve().parents[1] / "assets" / "test.jpg"
+IMAGE_PATH = Path(__file__).resolve().parents[1] / "assets" / "TEST.jpg"
 
 def detect_red_regions(img_rgb):
     """
@@ -31,7 +34,7 @@ def main():
     image_bgr = cv2.imread(str(IMAGE_PATH))
     if image_bgr is None:
         raise ValueError(f"Image not found: {IMAGE_PATH}\n"
-                         f"Make sure you placed 'test.jpg' inside the assets folder.")
+                         f"Make sure you placed 'TEST.jpg' inside the assets folder.")
 
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     detected_img, mask = detect_red_regions(image_rgb)
@@ -55,6 +58,18 @@ def main():
     fire_pixels = np.column_stack(np.where(mask > 0))
     print("Detected pixels:", len(fire_pixels))
     print("Top 5 coordinates:", fire_pixels[:5])
+
+    # Run Claude Vision wildfire analysis
+    print("\n" + "=" * 60)
+    print("🔥 SparkGuard Wildfire Intelligence Analysis")
+    print("=" * 60 + "\n")
+    
+    try:
+        report = analyze_wildfire_image(IMAGE_PATH)
+        print(report)
+    except Exception as e:
+        print(f"⚠️ Could not run Claude Vision analysis: {e}")
+        print("Make sure ANTHROPIC_API_KEY environment variable is set.")
 
 if __name__ == "__main__":
     main()
