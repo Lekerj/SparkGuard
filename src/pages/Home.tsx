@@ -1,16 +1,21 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+/**
+ * Home page — Hero + Globe + Fire Detection Panel + Future Section.
+ *
+ * All fire data comes from the local preprocessed pipeline (no API keys).
+ */
+
 import { motion } from 'framer-motion'
 import { Globe2, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Container from '@/components/layout/Container'
-import Globe from '@/components/Globe'
-import WildfirePanel from '@/components/WildfirePanel'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import FireGlobe from '@/components/FireGlobe'
+import FireDetectionPanel from '@/components/FireDetectionPanel'
 import FutureSection from '@/components/FutureSection'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import SectionTitle from '@/components/ui/SectionTitle'
-import { useWildfireData } from '@/hooks/useWildfireData'
-import type { WildfireRecord } from '@/data/wildfires'
+import { useFireData } from '@/hooks/useFireData'
 
 const fadeInUp = {
   initial: { opacity: 0, y: 18 },
@@ -19,12 +24,24 @@ const fadeInUp = {
 }
 
 export default function Home() {
-  const { records } = useWildfireData()
-  const [selected, setSelected] = useState<WildfireRecord | null>(records[0] || null)
+  const {
+    countries,
+    summary,
+    selectedCountry,
+    selectedPoints,
+    isLoading,
+    isLoadingPoints,
+    isMock,
+    selectCountry,
+  } = useFireData()
 
   return (
     <motion.div initial="initial" animate="animate">
+      {/* ═══════════════════════════════════════════════════════════════
+          HERO SECTION
+      ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-neutral-950 text-white">
+        {/* Background layers */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.25),_transparent_55%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_rgba(59,130,246,0.15),_transparent_45%)]" />
@@ -36,15 +53,18 @@ export default function Home() {
           <motion.div variants={fadeInUp} className="max-w-3xl">
             <div className="flex items-center gap-2 mb-6">
               <Badge variant="info">Mission Control</Badge>
-              <Badge variant="demo">Mock Data</Badge>
+              <Badge variant={isMock ? 'demo' : 'success'}>
+                {isMock ? 'Mock Data' : 'MODIS 2024 — Local Pipeline'}
+              </Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">SafeGuard</h1>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">SparkGuard</h1>
             <p className="text-xl sm:text-2xl text-neutral-200 mb-4">
-              Wildfire monitoring, awareness, and actionable insights in one live surface.
+              Fire detection monitoring and global awareness from satellite data.
             </p>
             <p className="text-neutral-400 mb-8">
-              Track emerging wildfire activity, review severity signals, and coordinate response
-              from a unified globe + intelligence panel.
+              Explore {summary ? summary.total_detections.toLocaleString() : '—'} MODIS fire
+              detections across {summary ? summary.total_countries : '—'} countries, preprocessed
+              from local CSV data with zero external API dependencies.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <a href="#globe" className="inline-flex">
@@ -68,36 +88,61 @@ export default function Home() {
         </Container>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════════════
+          GLOBE + DATA PANEL
+      ═══════════════════════════════════════════════════════════════ */}
       <section id="globe" className="bg-neutral-900 text-white py-16 lg:py-24">
         <Container>
-          <div className="grid lg:grid-cols-12 gap-10 items-start">
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            {/* Globe (left) */}
             <div className="lg:col-span-7">
               <SectionTitle
-                title="Active Wildfire Globe"
-                subtitle="Drag to explore. Click an incident to populate the briefing panel."
+                title="Global Fire Detections"
+                subtitle="Drag to explore · Click a hotspot or select a country from the panel"
                 align="left"
                 titleClassName="text-white"
                 subtitleClassName="text-neutral-400"
               />
-              <div className="bg-neutral-950/60 border border-neutral-800 rounded-2xl p-6">
-                <Globe size={420} />
-              </div>
-              <div className="mt-4 text-xs text-neutral-400">
-                Data shown is simulated. Globe visualization is a stylized 3D representation.
+              <div className="bg-neutral-950/60 border border-neutral-800 rounded-2xl p-2 sm:p-4">
+                <ErrorBoundary
+                  fallback={
+                    <div className="w-full aspect-square max-h-[560px] flex items-center justify-center bg-neutral-950 rounded-xl border border-neutral-800">
+                      <div className="text-center p-8">
+                        <p className="text-red-400 font-semibold mb-2">Globe failed to load</p>
+                        <p className="text-neutral-400 text-sm">WebGL may not be supported.</p>
+                      </div>
+                    </div>
+                  }
+                >
+                  <FireGlobe
+                    points={selectedPoints}
+                    countries={countries}
+                    focusCountry={selectedCountry}
+                    onCountryClick={selectCountry}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
 
+            {/* Panel (right) */}
             <div className="lg:col-span-5">
-              <WildfirePanel
-                records={records}
-                selectedId={selected?.id}
-                onSelect={(record) => setSelected(record)}
+              <FireDetectionPanel
+                countries={countries}
+                selectedCountry={selectedCountry}
+                onSelectCountry={selectCountry}
+                isMock={isMock}
+                isLoading={isLoading}
+                isLoadingPoints={isLoadingPoints}
+                totalDetections={summary?.total_detections}
               />
             </div>
           </div>
         </Container>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════════════
+          FUTURE SECTION PLACEHOLDER
+      ═══════════════════════════════════════════════════════════════ */}
       <FutureSection />
     </motion.div>
   )

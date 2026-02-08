@@ -48,13 +48,13 @@ export default function Header() {
           <Link
             to="/"
             className="flex items-center gap-2 text-neutral-900 hover:text-primary-600 transition-colors"
-            aria-label="SafeGuard - Home"
+            aria-label="SparkGuard - Home"
           >
             <div className="relative w-8 h-8">
               <Shield className="w-8 h-8 text-secondary-600" />
               <Flame className="w-4 h-4 text-primary-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(40%+3px)]" />
             </div>
-            <span className="text-xl font-bold">SafeGuard</span>
+            <span className="text-xl font-bold">SparkGuard</span>
           </Link>
 
           {/* Desktop Navigation */}

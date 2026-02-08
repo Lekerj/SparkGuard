@@ -7,22 +7,31 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preprocess": "npx tsx scripts/preprocess.ts",
+    "preprocess:source": "npx tsx scripts/preprocess.ts --source",
+    "build:data": "npx tsx scripts/preprocess.ts",
+    "build:all": "npm run build:data && npm run build"
   },
   "dependencies": {
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.316.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.0"
+    "react-globe.gl": "^2.37.0",
+    "react-router-dom": "^6.22.0",
+    "three": "^0.182.0"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^7.3.1"
   }

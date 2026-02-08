@@ -43,3 +43,10 @@ coverage
 
 # TypeScript
 *.tsbuildinfo
+
+# Preprocessed fire data (regenerate with `npm run preprocess`)
+public/data/country_fire_stats_2024.json
+public/data/points/
+
+# Raw data source
+data/

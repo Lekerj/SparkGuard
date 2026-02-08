@@ -6,8 +6,8 @@ import Home from '@/pages/Home'
 import Team from '@/pages/Team'
 
 const pageTitles: Record<string, string> = {
-  '/': 'SafeGuard - Wildfire Monitoring & Awareness',
-  '/team': 'Team | SafeGuard',
+  '/': 'SparkGuard — Fire Detection Monitoring',
+  '/team': 'Team | SparkGuard',
 }
 
 function App() {

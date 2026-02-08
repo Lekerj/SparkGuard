@@ -14,11 +14,12 @@ const fadeInUp = {
 export default function Team() {
   return (
     <motion.div initial="initial" animate="animate">
+      {/* ── Hero header ────────────────────────────────────────────── */}
       <section className="bg-neutral-950 text-white py-16 lg:py-20">
         <Container>
           <motion.div variants={fadeInUp} className="max-w-3xl">
             <p className="text-sm text-neutral-400 mb-3">Team</p>
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Meet the SafeGuard Team</h1>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Meet the SparkGuard Team</h1>
             <p className="text-lg text-neutral-300">
               The people building wildfire intelligence tooling for mission-critical response.
             </p>
@@ -26,11 +27,12 @@ export default function Team() {
         </Container>
       </section>
 
+      {/* ── Profile cards ──────────────────────────────────────────── */}
       <section className="py-16 lg:py-24 bg-neutral-50">
         <Container>
           <SectionTitle
             title="Profiles"
-            subtitle="Connect with the people behind SafeGuard"
+            subtitle="Connect with the people behind SparkGuard"
             align="left"
           />
 
@@ -57,7 +59,7 @@ export default function Team() {
                   <div className="flex gap-3">
                     <a
                       href={member.linkedinUrl}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 transition-colors"
                       aria-label={`${member.name} on LinkedIn`}
                       target="_blank"
                       rel="noreferrer"
@@ -67,7 +69,7 @@ export default function Team() {
                     </a>
                     <a
                       href={member.githubUrl}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 transition-colors"
                       aria-label={`${member.name} on GitHub`}
                       target="_blank"
                       rel="noreferrer"

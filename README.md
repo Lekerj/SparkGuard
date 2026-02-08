@@ -229,6 +229,97 @@ The core innovation is **integration and interpretation** — bringing fragmente
 
 ---
 
+## Development Setup
+
+### Prerequisites
+
+- **Node.js** 18+ and npm
+- A modern browser (Chrome, Firefox, Safari, Edge)
+
+### Quick Start
+
+```bash
+# 1. Clone and install
+git clone https://github.com/Lekerj/SparkGuard.git
+cd SparkGuard
+npm install
+
+# 2. Create your .env file (optional — app works without it using mock data)
+cp .env.example .env
+
+# 3. Start the dev server
+npm run dev
+```
+
+### Adding Your NASA FIRMS API Key (Optional — Free)
+
+The app runs perfectly with mock data. To enable **live wildfire data**:
+
+1. **Create a free NASA Earthdata account** at https://urs.earthdata.nasa.gov/users/new
+2. **Request a MAP_KEY** at https://firms.modaps.eosdis.nasa.gov/api/area/
+3. **Paste the key** into your `.env` file:
+   ```
+   VITE_NASA_FIRMS_MAP_KEY=your_map_key_here
+   ```
+4. **Restart the dev server** — the globe will now show real satellite fire detections.
+
+> **Limits:** Completely free (not a trial). ~10 requests/minute rate limit. Data updates every ~3 hours from NASA VIIRS/MODIS satellites.
+
+### How to Verify It's Working
+
+| Indicator | Mock Mode | Live Mode |
+|-----------|-----------|-----------|
+| Badge in hero section | Purple "Mock Data" | Green "Live Data" |
+| Panel header badge | Purple "Mock data" | Green "Live — NASA FIRMS" |
+| Bottom-right toast | Yellow "Mock Mode Active" warning | Not shown |
+| Fire hotspots on globe | 8 simulated US fires | Real satellite detections worldwide |
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 18 + TypeScript |
+| Build | Vite 7 |
+| Styling | Tailwind CSS 3.4 |
+| Globe | react-globe.gl (Three.js) |
+| Animation | Framer Motion |
+| Routing | React Router v6 |
+| Wildfire Data | NASA FIRMS API (VIIRS sensor) |
+| Icons | lucide-react |
+
+### Project Structure
+
+```
+src/
+├── components/
+│   ├── Globe.tsx              # 3D interactive earth (react-globe.gl)
+│   ├── WildfirePanel.tsx      # Mission-control wildfire list + detail
+│   ├── FutureSection.tsx      # Modular placeholder for future content
+│   ├── MissingKeysWarning.tsx # Non-blocking API key warning toast
+│   ├── layout/
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Layout.tsx
+│   │   └── Container.tsx
+│   └── ui/                    # Reusable UI primitives
+├── config/
+│   └── env.ts                 # Environment variable reader
+├── data/
+│   ├── wildfires.ts           # Types + mock data + CSV parser
+│   ├── firmsAdapter.ts        # NASA FIRMS CSV→WildfireRecord adapter
+│   └── teamMembers.ts         # Team member data
+├── hooks/
+│   └── useWildfireData.ts     # Primary data hook (API → mock fallback)
+├── pages/
+│   ├── Home.tsx               # Landing + Globe + Panel + Future section
+│   └── Team.tsx               # Team profile cards
+├── types/
+│   └── react-globe-gl.d.ts   # Type declarations for react-globe.gl
+└── App.tsx                    # Router + page titles
+```
+
+---
+
 <p align="center">
   <strong>SparkGuard</strong> · Built for <a href="#">Upstart @ GCES Concordia</a> · Health & Wellness · Smart Systems
 </p>
