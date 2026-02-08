@@ -14,7 +14,10 @@ import {
   Zap, X, Compass, Gauge,
 } from 'lucide-react'
 import type { WildfireEvent } from '@/types/wildfireEvent'
-import { getRegionIntelligence } from '@/types/wildfireEvent'
+import {
+  fetchRegionIntelligence,
+  type RegionIntelligence,
+} from '@/services/regionIntelligence'
 import {
   fetchWeather,
   degreesToCompass,
@@ -56,6 +59,9 @@ export default function InfoPanel({
   const [weather, setWeather] = useState<WeatherNowAndForecast | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [weatherError, setWeatherError] = useState<string | null>(null)
+  const [region, setRegion] = useState<RegionIntelligence | null>(null)
+  const [regionLoading, setRegionLoading] = useState(false)
+  const [regionError, setRegionError] = useState<string | null>(null)
 
   // Actions
   const handleSendAlert = useCallback(() => {
@@ -104,9 +110,38 @@ export default function InfoPanel({
     return () => { cancelled = true }
   }, [selectedEvent])
 
+  // Load real region intelligence (OSM Overpass + Nominatim + Open-Meteo)
+  useEffect(() => {
+    let cancelled = false
+
+    if (!selectedEvent) {
+      setRegion(null)
+      setRegionError(null)
+      setRegionLoading(false)
+      return () => { cancelled = true }
+    }
+
+    const loadRegion = async () => {
+      setRegionLoading(true)
+      setRegionError(null)
+      try {
+        const data = await fetchRegionIntelligence(selectedEvent.lat, selectedEvent.lon)
+        if (!cancelled) setRegion(data)
+      } catch (err) {
+        if (!cancelled) {
+          setRegionError((err as Error).message)
+        }
+      } finally {
+        if (!cancelled) setRegionLoading(false)
+      }
+    }
+
+    loadRegion()
+    return () => { cancelled = true }
+  }, [selectedEvent])
+
   // ─── Event detail view (Responder View) ───────────────────────
   if (selectedEvent) {
-    const region = getRegionIntelligence(selectedEvent.lat, selectedEvent.lon, selectedEvent.country)
     const sev = severityBadge(selectedEvent.intensity)
 
     return (
@@ -150,38 +185,67 @@ export default function InfoPanel({
             </div>
           </div>
 
-          {/* Region Intelligence */}
+          {/* Region Intelligence — OSM Overpass + Nominatim + Open-Meteo */}
           <div>
             <h4 className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1">
               <TreePine className="w-3 h-3" /> Region Intelligence
+              {regionLoading && <Loader2 className="w-3 h-3 animate-spin text-emerald-400 ml-1" />}
+              {region?.dataSource === 'live' && !regionLoading && (
+                <span className="text-[8px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full ml-auto border border-emerald-500/30">LIVE</span>
+              )}
             </h4>
-            <div className="bg-neutral-800/60 border border-neutral-700/50 rounded-lg p-3 space-y-2 text-xs">
-              <div className="flex justify-between"><span className="text-neutral-400">Biome</span><span className="text-white font-medium">{region.biome}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-400">Vegetation</span><span className="text-white text-right max-w-[60%]">{region.vegetation}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-400">Fuel type</span><span className="text-white text-right max-w-[60%]">{region.fuelType}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-400">Land cover</span><span className="text-white">{region.landCover}</span></div>
-              <div className="flex justify-between">
-                <span className="text-neutral-400">Dryness index</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-1.5 bg-neutral-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${region.drynessIndex > 60 ? 'bg-red-500' : region.drynessIndex > 40 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${region.drynessIndex}%` }}
-                    />
+
+            {regionError && !region && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] text-red-300 mb-2">
+                ⚠️ Region data unavailable: {regionError}
+              </div>
+            )}
+
+            {regionLoading && !region && (
+              <div className="bg-neutral-800/60 border border-neutral-700/50 rounded-lg p-4 flex items-center justify-center gap-2 text-xs text-neutral-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Querying OSM Overpass…
+              </div>
+            )}
+
+            {region && (
+              <div className="bg-neutral-800/60 border border-neutral-700/50 rounded-lg p-3 space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-neutral-400">Biome</span><span className="text-white font-medium">{region.biome}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Vegetation</span><span className="text-white text-right max-w-[60%]">{region.vegetation}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Fuel type</span><span className="text-white text-right max-w-[60%]">{region.fuelType}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Land cover</span><span className="text-white">{region.landCover}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Dryness index</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-neutral-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${region.drynessIndex > 60 ? 'bg-red-500' : region.drynessIndex > 40 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${region.drynessIndex}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-mono">{region.drynessIndex}</span>
                   </div>
-                  <span className="text-white font-mono">{region.drynessIndex}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Population risk</span>
+                  <span className={`font-medium ${
+                    region.populationRisk === 'Critical' ? 'text-red-400' :
+                    region.populationRisk === 'High' ? 'text-orange-400' :
+                    region.populationRisk === 'Moderate' ? 'text-amber-400' :
+                    'text-emerald-400'
+                  }`}>{region.populationRisk}</span>
+                </div>
+                {region.nearestPlace && (
+                  <div className="flex justify-between"><span className="text-neutral-400">Nearest place</span><span className="text-white">{region.nearestPlace}</span></div>
+                )}
+                {region.protectedAreas.length > 0 && (
+                  <div className="flex justify-between"><span className="text-neutral-400">Protected areas</span><span className="text-white text-right max-w-[60%]">{region.protectedAreas.join(', ')}</span></div>
+                )}
+                {region.elevation != null && (
+                  <div className="flex justify-between"><span className="text-neutral-400">Elevation</span><span className="text-white">{region.elevation} m</span></div>
+                )}
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-400">Population risk</span>
-                <span className={`font-medium ${
-                  region.populationRisk === 'Critical' ? 'text-red-400' :
-                  region.populationRisk === 'High' ? 'text-orange-400' :
-                  region.populationRisk === 'Moderate' ? 'text-amber-400' :
-                  'text-emerald-400'
-                }`}>{region.populationRisk}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Weather — MET Norway Responder View */}
@@ -320,8 +384,16 @@ export default function InfoPanel({
                 <p>• <strong>Date:</strong> {selectedEvent.startDate}</p>
                 <p>• <strong>Intensity:</strong> {selectedEvent.intensity.toFixed(1)} MW FRP — {sev.label} severity</p>
                 <p>• <strong>Confidence:</strong> {selectedEvent.confidence}%</p>
-                <p>• <strong>Biome:</strong> {region.biome} — {region.fuelType}</p>
-                <p>• <strong>Dryness:</strong> {region.drynessIndex}/100 — {region.drynessIndex > 60 ? 'HIGH RISK of rapid spread' : 'moderate conditions'}</p>
+                {region ? (
+                  <>
+                    <p>• <strong>Biome:</strong> {region.biome} — {region.fuelType}</p>
+                    <p>• <strong>Dryness:</strong> {region.drynessIndex}/100 — {region.drynessIndex > 60 ? 'HIGH RISK of rapid spread' : 'moderate conditions'}</p>
+                  </>
+                ) : regionLoading ? (
+                  <p>• <strong>Region:</strong> Loading OSM data…</p>
+                ) : (
+                  <p>• <strong>Region:</strong> Unable to load region intelligence</p>
+                )}
                 {weather && (
                   <>
                     <p>• <strong>Wind:</strong> {weather.current.windSpeed.toFixed(1)} m/s {degreesToCompass(weather.current.windDirection)} — {weather.current.windSpeed > 10 ? 'CAUTION: strong winds' : 'manageable'}</p>
@@ -333,10 +405,15 @@ export default function InfoPanel({
                 {!weather && (
                   <p>• <strong>Weather:</strong> Unable to load live conditions</p>
                 )}
-                <p>• <strong>Population risk:</strong> {region.populationRisk}</p>
-                <p>• <strong>Protected areas nearby:</strong> {region.protectedAreas.join(', ')}</p>
+                <p>• <strong>Population risk:</strong> {region?.populationRisk ?? 'Loading…'}</p>
+                {region && region.protectedAreas.length > 0 && (
+                  <p>• <strong>Protected areas nearby:</strong> {region.protectedAreas.join(', ')}</p>
+                )}
+                {region?.nearestPlace && (
+                  <p>• <strong>Nearest place:</strong> {region.nearestPlace}{region.country ? `, ${region.country}` : ''}</p>
+                )}
                 <hr className="border-neutral-700 my-3" />
-                <p className="text-neutral-500 italic">Brief generated with live MET Norway weather data + VIIRS satellite detection.</p>
+                <p className="text-neutral-500 italic">Brief generated with live MET Norway weather, OSM region intelligence + VIIRS satellite detection.</p>
               </div>
             </div>
           </div>
@@ -405,6 +482,10 @@ export default function InfoPanel({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-teal-500" />
               <span className="text-neutral-300">MET Norway — weather forecasts</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-neutral-300">OSM Overpass — region intelligence</span>
             </div>
           </div>
         </div>

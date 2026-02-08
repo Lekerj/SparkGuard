@@ -95,6 +95,7 @@ export default function GlobeExplorer() {
             perimeters={perimeters}
             showPerimeters={showPerimeters}
             onPerimeterClick={handlePerimeterClick}
+            selectedEvent={selectedEvent}
             className="w-full h-full"
           />
         </ErrorBoundary>

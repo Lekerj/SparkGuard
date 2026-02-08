@@ -1,191 +1,215 @@
 # 🔥 SparkGuard
 
-**AI-powered fire prevention and emergency response decision support — unifying satellite intelligence and actionable guidance for first responders.**
-
----
-
-## Quick Links
-
-| Section | Jump |
-|---------|------|
-| [Elevator Pitch](#elevator-pitch) | What we do in 30 seconds |
-| [Problem](#problem) | Why this matters |
-| [Solution](#solution-overview) | What we built |
-| [Key Features](#key-features) | Capabilities at a glance |
-| [How It Works](#how-it-works) | End-to-end pipeline |
-| [AI Decision Support](#ai-decision-support) | Human + AI collaboration |
-| [Prototype Scope](#prototype-scope) | What's in the demo |
-| [Business Model](#business-model-snapshot) | Path to market |
-
-**Deliverables:** [Pitch Deck][PITCH_DECK_LINK] · [Business Model Canvas][BMC_LINK] · [Prototype Demo][DEMO_LINK]
-
----
-
-## Elevator Pitch
-
-Wildfires and structural fires cause billions in damage, claim lives, and overwhelm emergency services every year. Current response systems rely on fragmented data, delayed satellite imagery, and manual coordination.
-
-**SparkGuard** is a unified platform that ingests existing satellite-derived data (including CubeSat sources) and delivers AI-assisted decision support to emergency responders. Instead of raw data dumps, we generate structured **incident packages** — actionable briefs with location context, weather conditions, recommended response actions, and visual overlays — so teams can act faster and smarter.
+**Real-time wildfire monitoring powered by satellite intelligence — bringing live fire detection, weather conditions, and region analysis onto an interactive 3D globe for first responders.**
 
 Built for the **Upstart Competition (GCES Concordia)** under the themes of **Health & Wellness** and **Smart Systems**.
 
 ---
 
-## Problem
+## What It Does
 
-### Why It Matters
+SparkGuard pulls **live data from 5 free public APIs** and displays it on an interactive 3D globe. Click any fire hotspot on Earth and instantly get:
 
-- **Delayed detection**: Satellite revisit times can miss fast-moving fires; ground reports are often too late.
-- **Fragmented data**: Weather, terrain, satellite imagery, and local intel exist in silos — responders must manually piece together situational awareness.
-- **Information overload**: Raw feeds without interpretation slow decision-making during critical windows.
+- **Where it is** — real-time satellite-detected fire location, coordinates, and nearest populated area
+- **What's burning** — biome, vegetation type, fuel type, and land cover pulled from OpenStreetMap
+- **How dangerous it is** — fire intensity (MW), dryness index, population risk, and protected areas nearby
+- **Current weather on scene** — temperature, wind speed & direction, gusts, humidity, and precipitation from MET Norway
+- **How the fire is contained** — official fire perimeter boundaries and containment status for US and Canadian fires
 
-### Who Is Affected
-
-| Stakeholder | Pain Point |
-|-------------|------------|
-| Fire departments | Incomplete scene intel before dispatch |
-| Emergency managers | No unified view across data sources |
-| Municipal governments | Reactive rather than preventive posture |
-| Communities | Slower evacuations, prolonged smoke exposure |
-
-### Real-World Constraints
-
-- Emergency budgets are tight; solutions must leverage **existing infrastructure**.
-- First responders need **simple outputs**, not dashboards requiring training.
+Everything is live. No mock data, no historical datasets, no simulations.
 
 ---
 
-## Solution Overview
+## Live Data Sources
 
-SparkGuard is a **software platform** that:
+Every piece of information displayed comes from a real API queried in real time:
 
-1. **Ingests** publicly available and commercial satellite-derived data (thermal anomalies, hotspot feeds, imagery).
-2. **Processes** incoming data through analytics pipelines to detect, classify, and contextualize fire events.
-3. **Generates** structured incident packages with recommended actions, wind/weather context, and visual overlays.
-4. **Distributes** packages to emergency services via configurable channels (email, SMS, webhook, exportable briefs).
+| What | Source | What It Gives Us |
+|------|--------|------------------|
+| 🔥 **Fire hotspots** | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/) (VIIRS NOAA-20 satellite) | Fire locations worldwide — intensity (FRP), brightness temperature, confidence, day/night |
+| 🌤️ **Weather** | [MET Norway Locationforecast 2.0](https://api.met.no/) | Temperature, humidity, wind speed & gusts, wind direction, precipitation, 24h forecast |
+| 🗺️ **Region intelligence** | [OpenStreetMap Overpass API](https://overpass-api.de/) | Land use, natural cover, protected area names, biome classification |
+| 📍 **Reverse geocoding** | [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/) | Country, state/province, nearest city, population data |
+| 🌡️ **Dryness & elevation** | [Open-Meteo](https://open-meteo.com/) | Relative humidity, precipitation (→ dryness index), elevation in meters |
+| 🔶 **US fire perimeters** | [WFIGS](https://data-nifc.opendata.arcgis.com/) (NIFC ArcGIS) | Active fire boundary polygons, acreage, containment %, discovery date |
+| 🔷 **Canada fire perimeters** | [CWFIS](https://cwfis.cfs.nrcan.gc.ca/) (GeoServer WFS) | Active fire boundary polygons for Canadian wildfires |
 
-### What the Prototype Demonstrates
-
-- End-to-end data flow from ingestion to alert generation (simulated feeds).
-- Dashboard UI for viewing active incidents and drilling into details.
-- Sample incident package with recommended actions.
+> **API keys:** Only NASA FIRMS requires a free API key. All other services are completely open.
 
 ---
 
-## Key Features
+## Features
 
-### 🛰️ Satellite Intelligence
-- Ingest thermal anomaly and hotspot data from existing satellite feeds
-- Support for CubeSat-class data sources with higher revisit frequencies
-- Automated parsing of standard fire detection formats (e.g., FIRMS-compatible)
+### 🌍 Interactive 3D Globe
+- Full-viewport Three.js globe with NASA Blue Marble textures
+- Fire hotspots colored by intensity — green (low) → yellow → orange → red (extreme)
+- Click any hotspot to select it — the globe stops rotating, zooms in, and highlights the point with a bright pulsing ring
+- Fire perimeter polygons overlaid for US (red) and Canadian (blue) fires
+- Pulsing rings on high-intensity fires (FRP > 50 MW) for visual emphasis
+- Smart downsampling — renders up to 2,000 points for smooth performance while preserving the most intense fires
 
-### 🧠 Decision Support
-- AI-assisted interpretation of multi-source data
-- Systematic querying of contextual databases (terrain, infrastructure, historical incidents)
-- Confidence scoring and uncertainty flagging for human review
+### 📋 Responder Panel
+- **Key facts** — date, intensity (MW), confidence (%), severity rating, brightness temperature, day/night
+- **Region Intelligence** (live) — biome, vegetation, fuel type, land cover, dryness index (0–100 bar), population risk level, nearest place, elevation, protected areas
+- **Weather** (live) — current conditions + 24-hour forecast in 3-hour intervals + wind risk assessment
+- **Responder Brief** — one-click generated summary combining all live data into a structured briefing document
+- **Export** — download full detection data as JSON
 
-### 📊 Operations Dashboard
-- Unified view of active and historical incidents
-- Incident package generation and export
-- Configurable alerting rules and distribution channels
+### 🔎 Globe Controls
+- Time range selector: 24h / 48h / 7 days of fire data
+- Fire perimeter toggle with source filter (US / Canada / Both)
+- Detection count and last-updated timestamp
+- Manual refresh
 
 ---
 
 ## How It Works
 
-**Step-by-step pipeline from data ingestion to dispatch:**
+```
+NASA FIRMS API ──→ VIIRS CSV ──→ Parse & downsample ──→ 3D Globe points
+                                                          │
+User clicks a point ──→ Globe stops + highlights ─────────┤
+                                                          │
+                    ┌─────────────────────────────────────┘
+                    ▼
+              InfoPanel loads (in parallel):
+                ├─ MET Norway ──→ Weather + 24h forecast
+                ├─ OSM Overpass ──→ Land use, biome, protected areas
+                ├─ OSM Nominatim ──→ Country, city, population
+                └─ Open-Meteo ──→ Humidity, elevation → dryness index
+                    │
+                    ▼
+              Responder view with all live data
+```
 
-1. **Ingest** — Satellite feeds (thermal, imagery, hotspots)
-2. **Normalize** — Align data formats, georeference, and timestamps
-3. **Enrich** — Add weather/wind data, terrain, and infrastructure context
-4. **Analyze** — AI models classify events, estimate severity, and predict spread
-5. **Decide** — AI surfaces recommendations; human reviews and approves
-6. **Dispatch** — Finalized incident package sent to responders
-
----
-
-## Data Sources & Integrations
-
-> *Examples of compatible data sources — actual feeds depend on availability and project scope.*
-
-- **Fire/Hotspot Feeds**: Public satellite fire detection services
-- **Satellite Imagery**: Earth observation providers (public and commercial)
-- **Weather/Wind**: Standard weather APIs
-- **Outputs**: Email/SMS alerts, exportable incident briefs, webhook integrations
-
----
-
-## AI Decision Support
-
-**What the AI does:**
-- Detects and classifies fire events from multi-source data
-- Estimates severity and potential spread
-- Generates draft recommendations with confidence scores
-
-**What humans decide:**
-- Approval of incident packages before dispatch
-- Override or adjust recommendations based on local knowledge
-- Final dispatch authority always remains with emergency personnel
-
-> **Human-in-the-loop**: AI recommendations are advisory only. Low-confidence events are flagged for manual review. Humans retain full decision authority.
+All API responses are cached in memory (weather: 15 min, region data: 30 min, FIRMS: 5 min) so repeated queries are instant and rate limits are respected.
 
 ---
 
-## Prototype Scope
-
-**What's included:**
-- Dashboard UI (clickable mockup / functional prototype)
-- Sample incident package with mock data
-- Alerting interface designs
-
-**What's simulated:**
-- Satellite data feeds (using sample/historical data)
-- AI model outputs (demonstration mode)
-
-> *Prototype demonstrates end-to-end concept and UX — not production-grade systems.*
-
----
-
-## Impact & Sustainability
+## Impact
 
 ### Health & Wellness
-
-- **Faster response** = reduced injury and fatality risk for affected communities.
-- **Reduced smoke exposure**: Earlier containment limits air quality degradation.
-- **Responder safety**: Better intel before arrival reduces unknowns on scene.
+- **Faster situational awareness** — responders see fire conditions before arriving on scene
+- **Reduced smoke exposure** — earlier detection enables smaller, faster interventions
+- **Responder safety** — wind, humidity, and terrain data help assess risk before deployment
 
 ### Sustainability
-
-- **Prevention-oriented**: Early detection enables smaller, faster interventions.
-- **Reduced burned area**: Limiting fire spread protects ecosystems and reduces carbon release.
-- **Efficient resource allocation**: Targeted response avoids unnecessary deployments.
-
-> *We do not claim specific metrics (hectares saved, emissions reduced) without validated data. Impact is projected based on faster detection-to-response cycles.*
+- **Prevention-oriented** — early satellite detection enables containment while fires are small
+- **Reduced burned area** — faster response protects ecosystems and reduces carbon emissions
+- **Efficient resource allocation** — severity and region data help prioritize response
 
 ---
 
-## Business Model Snapshot
+## Getting Started
 
-**Customer segments:**
-- Municipal and regional fire departments
-- Emergency management agencies
-- Forestry and wildfire services
-- Industrial operators in fire-prone areas
+### Prerequisites
 
-**Value proposition:**
-- Unified situational awareness from fragmented data
-- Actionable outputs tailored for responders
-- Modular integration with existing systems
+- **Node.js** 18+ and npm
+- A modern browser with WebGL support (Chrome, Firefox, Safari, Edge)
 
-**Revenue options** *(under consideration)*: SaaS subscription, per-incident pricing, enterprise licenses
+### Install & Run
+
+```bash
+# Clone
+git clone https://github.com/Lekerj/SparkGuard.git
+cd SparkGuard
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The app opens at `http://localhost:5173`.
+
+### NASA FIRMS API Key (Free)
+
+You need a free NASA API key to load live fire data:
+
+1. Create a free account at [NASA Earthdata](https://urs.earthdata.nasa.gov/users/new)
+2. Request a MAP_KEY at [FIRMS API](https://firms.modaps.eosdis.nasa.gov/api/area/)
+3. Create a `.env` file in the project root:
+   ```
+   VITE_FIRMS_API_KEY=your_key_here
+   ```
+4. Restart the dev server
+
+> All other APIs (MET Norway, OSM, Open-Meteo, WFIGS, CWFIS) require **no keys** — they're completely open.
+
+### Build for Production
+
+```bash
+npm run build
+npm run preview
+```
 
 ---
 
-## Risks, Ethics, Privacy & Compliance
+## Project Structure
 
-- **Privacy**: Configurable data retention; role-based access controls
-- **Security**: Data encrypted in transit; authentication required for all access
-- **Ethics**: AI is advisory only — humans retain full decision authority; system augments, not replaces, professional judgment
+```
+src/
+├── components/
+│   ├── FireGlobe.tsx          # 3D globe with points, rings, polygons, selection
+│   ├── InfoPanel.tsx          # Right panel — responder view, weather, region intel
+│   ├── GlobeControls.tsx      # Time range, perimeter toggles, search
+│   ├── FireDetectionPanel.tsx # Detection list for the Home page
+│   ├── ErrorBoundary.tsx      # React error boundary wrapper
+│   ├── FutureSection.tsx      # Placeholder section for future features
+│   ├── layout/                # Header, Footer, AppLayout, Container
+│   └── ui/                    # Reusable UI primitives (Badge, Button, etc.)
+├── services/
+│   ├── firms.ts               # NASA FIRMS VIIRS fire detection API
+│   ├── weatherMetNo.ts        # MET Norway Locationforecast 2.0
+│   ├── regionIntelligence.ts  # OSM Overpass + Nominatim + Open-Meteo
+│   ├── wfigs.ts               # US fire perimeters (NIFC ArcGIS)
+│   ├── cwfis.ts               # Canada fire perimeters (GeoServer WFS)
+│   └── cache.ts               # TTL cache + bbox utilities
+├── data/
+│   ├── fireDataService.ts     # FIRMS adapter — parse, confidence map, downsample
+│   ├── perimeterService.ts    # WFIGS + CWFIS fetching with pagination
+│   └── teamMembers.ts         # Team member data
+├── hooks/
+│   ├── useFireData.ts         # React hook — live FIRMS data + auto-refresh
+│   └── useFirePerimeters.ts   # React hook — live perimeters + source filter
+├── pages/
+│   ├── GlobeExplorer.tsx      # Main page — globe + controls + info panel
+│   ├── Home.tsx               # Landing page with hero section
+│   ├── Comparison.tsx         # Imagery comparison page
+│   └── Team.tsx               # Team profiles
+├── types/
+│   ├── fireData.ts            # FirePoint type
+│   ├── firePerimeter.ts       # FirePerimeter type
+│   └── wildfireEvent.ts       # WildfireEvent + RegionIntelligence types
+└── App.tsx                    # Router (/, /comparison, /team)
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 18 + TypeScript 5.3 |
+| Build tool | Vite 7 |
+| Styling | Tailwind CSS 3.4 |
+| 3D Globe | react-globe.gl (Three.js) |
+| Animation | Framer Motion |
+| Routing | React Router v6 |
+| Icons | Lucide React |
+
+### External APIs (all free, no cost)
+
+| API | Used For | Auth |
+|-----|----------|------|
+| NASA FIRMS | Fire hotspot detections (VIIRS NOAA-20) | Free API key |
+| MET Norway | Weather + forecast | None (User-Agent required) |
+| OSM Overpass | Land use, biome, protected areas | None |
+| OSM Nominatim | Reverse geocoding, population | None |
+| Open-Meteo | Humidity, precipitation, elevation | None |
+| WFIGS (NIFC) | US fire perimeters | None |
+| CWFIS (NRCan) | Canada fire perimeters | None |
 
 ---
 
@@ -193,9 +217,9 @@ SparkGuard is a **software platform** that:
 
 | Name | Role |
 |------|------|
-| [TEAM_MEMBER_1] | Software Developer |
-| [TEAM_MEMBER_2] | Software Developer |
-| [TEAM_MEMBER_3] | Software Developer |
+| [TEAM_MEMBER_1] | Full-Stack Engineer |
+| [TEAM_MEMBER_2] | Geospatial Analyst |
+| [TEAM_MEMBER_3] | Product & UX |
 
 ---
 
@@ -205,128 +229,6 @@ MIT
 
 ---
 
-## Contact / Demo
-
-| Resource | Link |
-|----------|------|
-| **Live Demo** | [DEMO_LINK] |
-| **Pitch Deck** | [PITCH_DECK_LINK] |
-| **Business Model Canvas** | [BMC_LINK] |
-| **Figma Prototype** | [FIGMA_LINK] |
-| **Contact Email** | [CONTACT_EMAIL] |
-
----
-
-## Why This Is Feasible
-
-SparkGuard is designed around **existing, accessible infrastructure**:
-
-1. **Public satellite data is available today** — NASA FIRMS, Sentinel, and others provide free or low-cost fire detection feeds.
-2. **Modular integrations** — the platform connects to external systems via standard APIs and export formats, minimizing custom development.
-3. **AI is assistive, not autonomous** — we use proven classification techniques with human oversight, avoiding regulatory and liability complexity of fully autonomous systems.
-
-The core innovation is **integration and interpretation** — bringing fragmented data into a unified view and translating it into actionable guidance for responders.
-
----
-
-## Development Setup
-
-### Prerequisites
-
-- **Node.js** 18+ and npm
-- A modern browser (Chrome, Firefox, Safari, Edge)
-
-### Quick Start
-
-```bash
-# 1. Clone and install
-git clone https://github.com/Lekerj/SparkGuard.git
-cd SparkGuard
-npm install
-
-# 2. Create your .env file (optional — app works without it using mock data)
-cp .env.example .env
-
-# 3. Start the dev server
-npm run dev
-```
-
-### Adding Your NASA FIRMS API Key (Optional — Free)
-
-The app runs perfectly with mock data. To enable **live wildfire data**:
-
-1. **Create a free NASA Earthdata account** at https://urs.earthdata.nasa.gov/users/new
-2. **Request a MAP_KEY** at https://firms.modaps.eosdis.nasa.gov/api/area/
-3. **Paste the key** into your `.env` file:
-   ```
-   VITE_NASA_FIRMS_MAP_KEY=your_map_key_here
-   ```
-4. **Restart the dev server** — the globe will now show real satellite fire detections.
-
-> **Limits:** Completely free (not a trial). ~10 requests/minute rate limit. Data updates every ~3 hours from NASA VIIRS/MODIS satellites.
-
-### How to Verify It's Working
-
-| Indicator | Mock Mode | Live Mode |
-|-----------|-----------|-----------|
-| Badge in hero section | Purple "Mock Data" | Green "Live Data" |
-| Panel header badge | Purple "Mock data" | Green "Live — NASA FIRMS" |
-| Bottom-right toast | Yellow "Mock Mode Active" warning | Not shown |
-| Fire hotspots on globe | 8 simulated US fires | Real satellite detections worldwide |
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18 + TypeScript |
-| Build | Vite 7 |
-| Styling | Tailwind CSS 3.4 |
-| Globe | react-globe.gl (Three.js) |
-| Animation | Framer Motion |
-| Routing | React Router v6 |
-| Wildfire Data | NASA FIRMS API (VIIRS sensor) |
-| Icons | lucide-react |
-
-### Project Structure
-
-```
-src/
-├── components/
-│   ├── Globe.tsx              # 3D interactive earth (react-globe.gl)
-│   ├── WildfirePanel.tsx      # Mission-control wildfire list + detail
-│   ├── FutureSection.tsx      # Modular placeholder for future content
-│   ├── MissingKeysWarning.tsx # Non-blocking API key warning toast
-│   ├── layout/
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Layout.tsx
-│   │   └── Container.tsx
-│   └── ui/                    # Reusable UI primitives
-├── config/
-│   └── env.ts                 # Environment variable reader
-├── data/
-│   ├── wildfires.ts           # Types + mock data + CSV parser
-│   ├── firmsAdapter.ts        # NASA FIRMS CSV→WildfireRecord adapter
-│   └── teamMembers.ts         # Team member data
-├── hooks/
-│   └── useWildfireData.ts     # Primary data hook (API → mock fallback)
-├── pages/
-│   ├── Home.tsx               # Landing + Globe + Panel + Future section
-│   └── Team.tsx               # Team profile cards
-├── types/
-│   └── react-globe-gl.d.ts   # Type declarations for react-globe.gl
-└── App.tsx                    # Router + page titles
-```
-
----
-
 <p align="center">
   <strong>SparkGuard</strong> · Built for <a href="#">Upstart @ GCES Concordia</a> · Health & Wellness · Smart Systems
 </p>
-
-<!-- Reference Links (update with actual URLs) -->
-[DEMO_LINK]: #
-[PITCH_DECK_LINK]: #
-[BMC_LINK]: #
-[FIGMA_LINK]: #
-[CONTACT_EMAIL]: mailto:contact@example.com

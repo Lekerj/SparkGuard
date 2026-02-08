@@ -68,6 +68,8 @@ interface FireGlobeProps {
   showPerimeters?: boolean
   /** Callback when a perimeter polygon is clicked */
   onPerimeterClick?: (perimeter: FirePerimeter) => void
+  /** Currently selected event — used for selection indicator + stopping rotation */
+  selectedEvent?: WildfireEvent | null
 }
 
 export default function FireGlobe({
@@ -77,6 +79,7 @@ export default function FireGlobe({
   perimeters = [],
   showPerimeters = false,
   onPerimeterClick,
+  selectedEvent = null,
 }: FireGlobeProps) {
   const globeRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -125,6 +128,18 @@ export default function FireGlobe({
     return () => clearTimeout(timer)
   }, [dimensions])
 
+  // ── Stop rotation when a point is selected, resume when cleared ────────
+  useEffect(() => {
+    try {
+      const globe = globeRef.current
+      if (!globe || typeof globe.controls !== 'function') return
+      const controls = globe.controls()
+      if (controls) {
+        controls.autoRotate = !selectedEvent
+      }
+    } catch { /* globe not ready */ }
+  }, [selectedEvent])
+
   // ── Build point data from live FIRMS detections ───────────────────────
   const pointsData: GlobePoint[] = useMemo(() => {
     return points.map((p) => ({
@@ -164,6 +179,47 @@ export default function FireGlobe({
         _frp: p.frp,
       }))
   }, [points])
+
+  // ── Selection indicator — bright ring on the selected point ───────────
+  const selectionRingData = useMemo(() => {
+    if (!selectedEvent) return []
+    return [{
+      lat: selectedEvent.lat,
+      lng: selectedEvent.lon,
+      maxR: 4,
+      propagationSpeed: 3,
+      repeatPeriod: 600,
+      _frp: -1, // sentinel for selection ring color
+    }]
+  }, [selectedEvent])
+
+  // Merge pulsing FRP rings + selection indicator ring
+  const allRingsData = useMemo(() => {
+    return [...ringsData, ...selectionRingData]
+  }, [ringsData, selectionRingData])
+
+  // ── Selected point highlight — renders a larger bright point on top ────
+  const selectedPointData = useMemo(() => {
+    if (!selectedEvent) return []
+    return [{
+      lat: selectedEvent.lat,
+      lng: selectedEvent.lon,
+      color: 'rgba(255, 255, 255, 1)',
+      radius: 0.7,
+      altitude: 0.018,
+      label: '',
+      _frp: 0,
+      _brightness: 0,
+      _confidence: 0,
+      _date: '',
+      _daynight: '',
+    }]
+  }, [selectedEvent])
+
+  // Merge all point layers: fire points + selection highlight
+  const allPointsData = useMemo(() => {
+    return [...pointsData, ...selectedPointData]
+  }, [pointsData, selectedPointData])
 
   // ── Click handler ─────────────────────────────────────────────────────
   const handlePointClick = useCallback(
@@ -307,7 +363,7 @@ export default function FireGlobe({
           atmosphereAltitude={0.2}
           animateIn={true}
           onGlobeReady={() => setGlobeReady(true)}
-          pointsData={pointsData}
+          pointsData={allPointsData}
           pointLat="lat"
           pointLng="lng"
           pointColor="color"
@@ -315,9 +371,10 @@ export default function FireGlobe({
           pointAltitude="altitude"
           pointLabel="label"
           onPointClick={handlePointClick}
-          ringsData={ringsData}
+          ringsData={allRingsData}
           ringColor={(d: object) => {
             const frp = (d as { _frp: number })._frp ?? 50
+            if (frp === -1) return 'rgba(100, 180, 255, 0.9)' // selection ring — bright blue
             if (frp > 200) return 'rgba(255, 60, 40, 0.7)'
             if (frp > 80) return 'rgba(255, 140, 40, 0.5)'
             return 'rgba(255, 200, 80, 0.4)'
