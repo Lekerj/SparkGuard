@@ -1,7 +1,7 @@
 /**
  * Home page — Hero + Globe + Fire Detection Panel + Future Section.
  *
- * All fire data comes from the local preprocessed pipeline (no API keys).
+ * All fire data comes from live NASA FIRMS VIIRS satellite feed.
  */
 
 import { motion } from 'framer-motion'
@@ -25,14 +25,14 @@ const fadeInUp = {
 
 export default function Home() {
   const {
-    countries,
-    summary,
-    selectedCountry,
-    selectedPoints,
+    points,
+    totalDetections,
     isLoading,
-    isLoadingPoints,
-    isMock,
-    selectCountry,
+    error,
+    timeRange,
+    setTimeRange,
+    refresh,
+    fetchedAt,
   } = useFireData()
 
   return (
@@ -53,18 +53,18 @@ export default function Home() {
           <motion.div variants={fadeInUp} className="max-w-3xl">
             <div className="flex items-center gap-2 mb-6">
               <Badge variant="info">Mission Control</Badge>
-              <Badge variant={isMock ? 'demo' : 'success'}>
-                {isMock ? 'Mock Data' : 'MODIS 2024 — Local Pipeline'}
-              </Badge>
+              <Badge variant="success">NASA FIRMS — Live VIIRS</Badge>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">SparkGuard</h1>
             <p className="text-xl sm:text-2xl text-neutral-200 mb-4">
-              Fire detection monitoring and global awareness from satellite data.
+              Real-time fire detection monitoring from satellite data.
             </p>
             <p className="text-neutral-400 mb-8">
-              Explore {summary ? summary.total_detections.toLocaleString() : '—'} MODIS fire
-              detections across {summary ? summary.total_countries : '—'} countries, preprocessed
-              from local CSV data with zero external API dependencies.
+              Explore{' '}
+              {totalDetections > 0
+                ? `${totalDetections.toLocaleString()} live VIIRS fire detections`
+                : 'live satellite fire detections'}
+              {' '}powered by NASA FIRMS, with weather intelligence from MET Norway.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <a href="#globe" className="inline-flex">
@@ -98,7 +98,7 @@ export default function Home() {
             <div className="lg:col-span-7">
               <SectionTitle
                 title="Global Fire Detections"
-                subtitle="Drag to explore · Click a hotspot or select a country from the panel"
+                subtitle="Drag to explore · Click a hotspot for details"
                 align="left"
                 titleClassName="text-white"
                 subtitleClassName="text-neutral-400"
@@ -114,12 +114,7 @@ export default function Home() {
                     </div>
                   }
                 >
-                  <FireGlobe
-                    points={selectedPoints}
-                    countries={countries}
-                    focusCountry={selectedCountry}
-                    onCountryClick={selectCountry}
-                  />
+                  <FireGlobe points={points} />
                 </ErrorBoundary>
               </div>
             </div>
@@ -127,13 +122,14 @@ export default function Home() {
             {/* Panel (right) */}
             <div className="lg:col-span-5">
               <FireDetectionPanel
-                countries={countries}
-                selectedCountry={selectedCountry}
-                onSelectCountry={selectCountry}
-                isMock={isMock}
+                points={points}
+                totalDetections={totalDetections}
                 isLoading={isLoading}
-                isLoadingPoints={isLoadingPoints}
-                totalDetections={summary?.total_detections}
+                error={error}
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                onRefresh={refresh}
+                fetchedAt={fetchedAt}
               />
             </div>
           </div>

@@ -50,6 +50,16 @@ declare module 'react-globe.gl' {
 
     // Polygons layer
     polygonsData?: object[]
+    polygonCapColor?: string | ((d: object) => string)
+    polygonSideColor?: string | ((d: object) => string)
+    polygonStrokeColor?: string | ((d: object) => string)
+    polygonAltitude?: number | ((d: object) => number)
+    polygonCapCurvatureResolution?: number
+    polygonLabel?: string | ((d: object) => string)
+    polygonsTransitionDuration?: number
+    onPolygonClick?: (polygon: object, event: MouseEvent) => void
+    onPolygonHover?: (polygon: object | null, prevPolygon: object | null) => void
+    polygonGeoJsonGeometry?: string | ((d: object) => object)
 
     // Paths layer
     pathsData?: object[]

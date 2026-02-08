@@ -1,100 +1,86 @@
 /**
  * useFireData — primary data hook for SparkGuard.
  *
- * Loads the preprocessed country stats on mount.
- * Provides methods to select a country and lazy-load its points.
+ * NOW fetches live fire detections from NASA FIRMS instead of static JSON.
+ * Provides time range selection (24h / 48h / 7d) and auto-refresh.
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import type { CountryFireStats, CountryFireStatsFile, FirePoint } from '@/types/fireData'
-import { fetchCountryStats, fetchCountryPoints } from '@/data/fireDataService'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import type { FirePoint } from '@/types/fireData'
+import { fetchLiveDetections, type FIRMSResult } from '@/data/fireDataService'
+import type { FIRMSTimeRange } from '@/services/firms'
 
 export interface UseFireDataResult {
-  /** All country stats (sorted by detections_count desc) */
-  countries: CountryFireStats[]
-  /** Summary metadata */
-  summary: CountryFireStatsFile | null
-  /** Currently selected country (or null) */
-  selectedCountry: CountryFireStats | null
-  /** Points for the selected country (lazy-loaded) */
-  selectedPoints: FirePoint[]
-  /** Is the initial stats load in progress? */
+  /** All live fire detection points */
+  points: FirePoint[]
+  /** Total detection count */
+  totalDetections: number
+  /** Is the data loading? */
   isLoading: boolean
-  /** Are the selected country's points loading? */
-  isLoadingPoints: boolean
-  /** True if using mock fallback data */
-  isMock: boolean
-  /** Select a country by name */
-  selectCountry: (countryName: string | null) => void
+  /** Error message, if any */
+  error: string | null
+  /** Current time range */
+  timeRange: FIRMSTimeRange
+  /** Change the time range */
+  setTimeRange: (range: FIRMSTimeRange) => void
+  /** Manually refresh */
+  refresh: () => void
+  /** ISO timestamp of last fetch */
+  fetchedAt: string | null
 }
 
 export function useFireData(): UseFireDataResult {
-  const [summary, setSummary] = useState<CountryFireStatsFile | null>(null)
+  const [result, setResult] = useState<FIRMSResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isMock, setIsMock] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [timeRange, setTimeRange] = useState<FIRMSTimeRange>('24h')
+  const abortRef = useRef(false)
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryFireStats | null>(null)
-  const [selectedPoints, setSelectedPoints] = useState<FirePoint[]>([])
-  const [isLoadingPoints, setIsLoadingPoints] = useState(false)
-
-  // Load stats on mount
-  useEffect(() => {
-    let cancelled = false
+  const doFetch = useCallback(async (range: FIRMSTimeRange) => {
+    abortRef.current = false
     setIsLoading(true)
+    setError(null)
 
-    fetchCountryStats()
-      .then((data) => {
-        if (cancelled) return
-        setSummary(data)
-        // Detect mock: mock has exactly 6 countries with Brazil first
-        setIsMock(data.total_countries <= 6 && data.countries[0]?.country === 'Brazil')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.error('Failed to load fire stats:', err)
-        setIsMock(true)
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
-
-    return () => { cancelled = true }
+    try {
+      const data = await fetchLiveDetections(range)
+      if (!abortRef.current) {
+        setResult(data)
+      }
+    } catch (err) {
+      if (!abortRef.current) {
+        const msg = (err as Error).message || 'Failed to fetch fire data'
+        setError(msg)
+        console.error('FIRMS fetch error:', msg)
+      }
+    } finally {
+      if (!abortRef.current) {
+        setIsLoading(false)
+      }
+    }
   }, [])
 
-  // Select a country and load its points
-  const selectCountry = useCallback(
-    (countryName: string | null) => {
-      if (!countryName || !summary) {
-        setSelectedCountry(null)
-        setSelectedPoints([])
-        return
-      }
+  // Fetch on mount and when time range changes
+  useEffect(() => {
+    doFetch(timeRange)
+    return () => { abortRef.current = true }
+  }, [timeRange, doFetch])
 
-      const found = summary.countries.find((c) => c.country === countryName) ?? null
-      setSelectedCountry(found)
+  const handleSetTimeRange = useCallback((range: FIRMSTimeRange) => {
+    setTimeRange(range)
+  }, [])
 
-      if (!found) {
-        setSelectedPoints([])
-        return
-      }
-
-      setIsLoadingPoints(true)
-      fetchCountryPoints(countryName)
-        .then((data) => setSelectedPoints(data.points))
-        .catch(() => setSelectedPoints([]))
-        .finally(() => setIsLoadingPoints(false))
-    },
-    [summary],
-  )
+  const refresh = useCallback(() => {
+    doFetch(timeRange)
+  }, [timeRange, doFetch])
 
   return {
-    countries: summary?.countries ?? [],
-    summary,
-    selectedCountry,
-    selectedPoints,
+    points: result?.points ?? [],
+    totalDetections: result?.totalCount ?? 0,
     isLoading,
-    isLoadingPoints,
-    isMock,
-    selectCountry,
+    error,
+    timeRange,
+    setTimeRange: handleSetTimeRange,
+    refresh,
+    fetchedAt: result?.fetchedAt ?? null,
   }
 }

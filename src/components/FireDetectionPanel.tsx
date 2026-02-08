@@ -1,20 +1,18 @@
 /**
- * FireDetectionPanel — Right-side data panel for fire detection stats.
+ * FireDetectionPanel — Right-side data panel for live FIRMS fire detection stats.
  *
- * Displays a searchable, sortable list of countries from the preprocessed
- * country_fire_stats_2024.json. Selecting a country shows detail stats and
- * triggers the globe to zoom + load that country's points.
+ * Displays summary stats from the live NASA FIRMS VIIRS feed, with a
+ * time-range selector and real-time breakdown of FRP distributions.
  */
 
-import { useMemo, useState } from 'react'
-import { Search, ArrowUpDown, MapPin, Flame, Loader2, BarChart3, Sun, Moon, ChevronLeft } from 'lucide-react'
+import { useMemo } from 'react'
+import { Flame, Loader2, BarChart3, Sun, Moon, RefreshCw, AlertTriangle, Satellite } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import type { CountryFireStats } from '@/types/fireData'
+import type { FirePoint } from '@/types/fireData'
+import type { FIRMSTimeRange } from '@/services/firms'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-type SortKey = 'detections' | 'frp' | 'confidence'
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -22,47 +20,71 @@ function formatNumber(n: number): string {
   return n.toLocaleString()
 }
 
-function severityFromFrp(avgFrp: number): { label: string; variant: 'success' | 'warning' | 'danger' } {
-  if (avgFrp > 80) return { label: 'High', variant: 'danger' }
-  if (avgFrp > 20) return { label: 'Moderate', variant: 'warning' }
-  return { label: 'Low', variant: 'success' }
+const TIME_RANGE_LABELS: Record<FIRMSTimeRange, string> = {
+  '24h': 'Last 24 Hours',
+  '48h': 'Last 48 Hours',
+  '7d': 'Last 7 Days',
 }
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface FireDetectionPanelProps {
-  countries: CountryFireStats[]
-  selectedCountry: CountryFireStats | null
-  onSelectCountry: (country: string | null) => void
-  isMock: boolean
+  points: FirePoint[]
+  totalDetections: number
   isLoading: boolean
-  isLoadingPoints: boolean
-  totalDetections?: number
+  error: string | null
+  timeRange: FIRMSTimeRange
+  onTimeRangeChange: (range: FIRMSTimeRange) => void
+  onRefresh: () => void
+  fetchedAt: string | null
 }
 
 export default function FireDetectionPanel({
-  countries,
-  selectedCountry,
-  onSelectCountry,
-  isMock,
+  points,
+  totalDetections,
   isLoading,
-  isLoadingPoints,
-  totalDetections = 0,
+  error,
+  timeRange,
+  onTimeRangeChange,
+  onRefresh,
+  fetchedAt,
 }: FireDetectionPanelProps) {
-  const [query, setQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortKey>('detections')
+  // ── Derived stats ─────────────────────────────────────────────────────
+  const stats = useMemo(() => {
+    if (points.length === 0) {
+      return { avgFrp: 0, maxFrp: 0, avgConf: 0, dayCount: 0, nightCount: 0, highFrp: 0, medFrp: 0, lowFrp: 0 }
+    }
+    let totalFrp = 0
+    let maxFrp = 0
+    let totalConf = 0
+    let dayCount = 0
+    let nightCount = 0
+    let highFrp = 0
+    let medFrp = 0
+    let lowFrp = 0
 
-  // ── Filter + sort ─────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim()
-    return countries
-      .filter((c) => !q || c.country.toLowerCase().includes(q))
-      .sort((a, b) => {
-        if (sortBy === 'detections') return b.detections_count - a.detections_count
-        if (sortBy === 'frp') return b.total_frp - a.total_frp
-        return b.avg_confidence - a.avg_confidence
-      })
-  }, [query, sortBy, countries])
+    for (const p of points) {
+      totalFrp += p.frp
+      totalConf += p.confidence
+      if (p.frp > maxFrp) maxFrp = p.frp
+      if (p.daynight === 'D') dayCount++
+      else nightCount++
+      if (p.frp > 80) highFrp++
+      else if (p.frp > 20) medFrp++
+      else lowFrp++
+    }
+
+    return {
+      avgFrp: Math.round(totalFrp / points.length),
+      maxFrp: Math.round(maxFrp),
+      avgConf: Math.round(totalConf / points.length),
+      dayCount,
+      nightCount,
+      highFrp,
+      medFrp,
+      lowFrp,
+    }
+  }, [points])
 
   return (
     <Card className="bg-neutral-900/70 border-neutral-700 text-white h-full flex flex-col">
@@ -70,177 +92,135 @@ export default function FireDetectionPanel({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Flame className="w-5 h-5 text-primary-400" />
-          Fire Detections
+          Live Fire Detections
           {isLoading && <Loader2 className="w-4 h-4 animate-spin text-secondary-400" />}
         </h3>
-        <Badge variant={isMock ? 'demo' : 'success'} size="sm">
-          {isMock ? 'Mock data' : 'MODIS 2024'}
+        <Badge variant="success" size="sm">
+          <Satellite className="w-3 h-3 mr-1 inline" />
+          VIIRS Live
         </Badge>
+      </div>
+
+      {/* ── Error banner ─────────────────────────────────────────────── */}
+      {error && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* ── Time range selector ──────────────────────────────────────── */}
+      <div className="flex gap-1 mb-4">
+        {(['24h', '48h', '7d'] as FIRMSTimeRange[]).map((r) => (
+          <button
+            key={r}
+            onClick={() => onTimeRangeChange(r)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              timeRange === r
+                ? 'bg-primary-500 text-white'
+                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+            }`}
+          >
+            {r === '24h' ? '24 h' : r === '48h' ? '48 h' : '7 d'}
+          </button>
+        ))}
+        <button
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="px-2 py-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors disabled:opacity-40"
+          title="Refresh"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* ── Summary bar ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-neutral-800/70 rounded-lg p-2 text-center">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Countries</p>
-          <p className="text-sm font-bold text-white">{countries.length}</p>
-        </div>
-        <div className="bg-neutral-800/70 rounded-lg p-2 text-center">
           <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Detections</p>
           <p className="text-sm font-bold text-white">{formatNumber(totalDetections)}</p>
         </div>
         <div className="bg-neutral-800/70 rounded-lg p-2 text-center">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Year</p>
-          <p className="text-sm font-bold text-white">2024</p>
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Avg FRP</p>
+          <p className="text-sm font-bold text-white">{stats.avgFrp} MW</p>
+        </div>
+        <div className="bg-neutral-800/70 rounded-lg p-2 text-center">
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Max FRP</p>
+          <p className="text-sm font-bold text-white">{formatNumber(stats.maxFrp)} MW</p>
         </div>
       </div>
 
-      {/* ── Controls ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="relative">
-          <Search className="w-4 h-4 text-neutral-400 absolute top-1/2 left-3 -translate-y-1/2" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search country…"
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        <div className="relative">
-          <ArrowUpDown className="w-4 h-4 text-neutral-400 absolute top-1/2 left-3 -translate-y-1/2" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
-          >
-            <option value="detections">Most Detections</option>
-            <option value="frp">Highest FRP</option>
-            <option value="confidence">Confidence</option>
-          </select>
+      {/* ── FRP Distribution ─────────────────────────────────────────── */}
+      <div className="mb-4">
+        <p className="text-xs text-neutral-400 uppercase tracking-wide mb-2">FRP Distribution</p>
+        <div className="space-y-1.5">
+          <FrpBar label="High (>80 MW)" count={stats.highFrp} total={totalDetections} color="bg-red-500" />
+          <FrpBar label="Moderate (20–80 MW)" count={stats.medFrp} total={totalDetections} color="bg-amber-500" />
+          <FrpBar label="Low (<20 MW)" count={stats.lowFrp} total={totalDetections} color="bg-green-500" />
         </div>
       </div>
 
-      {/* ── Selected country detail ──────────────────────────────────── */}
-      {selectedCountry && (
-        <CountryDetail
-          country={selectedCountry}
-          isLoadingPoints={isLoadingPoints}
-          onBack={() => onSelectCountry(null)}
-        />
-      )}
-
-      {/* ── Country list ─────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin min-h-0 max-h-[340px]">
-        {filtered.length === 0 && !isLoading && (
-          <p className="text-sm text-neutral-500 py-6 text-center">No countries match your search.</p>
-        )}
-        {isLoading && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-secondary-400" />
+      {/* ── Day / Night split ────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-neutral-800/70 rounded-lg p-3 flex items-center gap-3">
+          <Sun className="w-5 h-5 text-amber-400" />
+          <div>
+            <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Day</p>
+            <p className="text-sm font-bold text-white">{formatNumber(stats.dayCount)}</p>
           </div>
-        )}
-        {filtered.map((c) => {
-          const sev = severityFromFrp(c.avg_frp)
-          const isSelected = selectedCountry?.country === c.country
-          return (
-            <button
-              key={c.country}
-              onClick={() => onSelectCountry(c.country)}
-              className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                isSelected
-                  ? 'bg-primary-500/15 border-primary-400'
-                  : 'bg-neutral-800/60 border-neutral-700/60 hover:border-neutral-500'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-medium text-white truncate">{c.country}</p>
-                  <p className="text-xs text-neutral-400">
-                    {c.detections_count.toLocaleString()} detections
-                  </p>
-                </div>
-                <Badge variant={sev.variant} size="sm">{sev.label}</Badge>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] text-neutral-400">
-                <span className="flex items-center gap-1">
-                  <Flame className="w-3 h-3" />
-                  {formatNumber(c.total_frp)} MW
-                </span>
-                <span className="flex items-center gap-1">
-                  <BarChart3 className="w-3 h-3" />
-                  {c.avg_confidence}% conf
-                </span>
-              </div>
-            </button>
-          )
-        })}
+        </div>
+        <div className="bg-neutral-800/70 rounded-lg p-3 flex items-center gap-3">
+          <Moon className="w-5 h-5 text-blue-400" />
+          <div>
+            <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Night</p>
+            <p className="text-sm font-bold text-white">{formatNumber(stats.nightCount)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Stats ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-neutral-800/70 rounded-lg p-2">
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Avg Confidence</p>
+          <p className="text-sm font-bold text-white flex items-center gap-1">
+            <BarChart3 className="w-3 h-3" />
+            {stats.avgConf}%
+          </p>
+        </div>
+        <div className="bg-neutral-800/70 rounded-lg p-2">
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Time Range</p>
+          <p className="text-sm font-bold text-white">{TIME_RANGE_LABELS[timeRange]}</p>
+        </div>
+      </div>
+
+      {/* ── Data source info ─────────────────────────────────────────── */}
+      <div className="mt-auto pt-3 border-t border-neutral-700/50">
+        <p className="text-[10px] text-neutral-500 leading-relaxed">
+          Live data from NASA FIRMS — VIIRS SNPP NRT satellite.
+          {fetchedAt && (
+            <> Updated {new Date(fetchedAt).toLocaleTimeString()}.</>
+          )}
+        </p>
       </div>
     </Card>
   )
 }
 
-// ─── Country detail sub-component ───────────────────────────────────────────
+// ─── FRP Distribution Bar ───────────────────────────────────────────────────
 
-function CountryDetail({
-  country,
-  isLoadingPoints,
-  onBack,
-}: {
-  country: CountryFireStats
-  isLoadingPoints: boolean
-  onBack: () => void
-}) {
-  const sev = severityFromFrp(country.avg_frp)
-
+function FrpBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
   return (
-    <div className="mb-3 border border-neutral-700 rounded-lg bg-neutral-800/50 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white transition-colors"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Back
-        </button>
-        <Badge variant={sev.variant} size="sm">{sev.label} Avg FRP</Badge>
-      </div>
-
-      <h4 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
-        <MapPin className="w-4 h-4 text-primary-400" />
-        {country.country}
-        {isLoadingPoints && <Loader2 className="w-3 h-3 animate-spin text-secondary-400" />}
-      </h4>
-
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <Stat label="Detections" value={country.detections_count.toLocaleString()} />
-        <Stat label="Total FRP" value={`${formatNumber(country.total_frp)} MW`} />
-        <Stat label="Avg FRP" value={`${country.avg_frp} MW`} />
-        <Stat label="Avg Confidence" value={`${country.avg_confidence}%`} />
-        <Stat label="Max Brightness" value={`${country.max_brightness} K`} />
-        <Stat label="Date Range" value={`${country.date_range.earliest} → ${country.date_range.latest}`} />
-        <div className="bg-neutral-800 rounded p-2 flex items-center gap-2">
-          <Sun className="w-3 h-3 text-amber-400" />
-          <div>
-            <p className="text-neutral-400">Day</p>
-            <p className="font-medium text-white">{formatNumber(country.day_count)}</p>
-          </div>
+    <div className="flex items-center gap-2">
+      <div className="flex-1">
+        <div className="flex items-center justify-between text-[11px] mb-0.5">
+          <span className="text-neutral-300">{label}</span>
+          <span className="text-neutral-400">{formatNumber(count)} ({pct}%)</span>
         </div>
-        <div className="bg-neutral-800 rounded p-2 flex items-center gap-2">
-          <Moon className="w-3 h-3 text-blue-400" />
-          <div>
-            <p className="text-neutral-400">Night</p>
-            <p className="font-medium text-white">{formatNumber(country.night_count)}</p>
-          </div>
+        <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+          <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
         </div>
       </div>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-neutral-800 rounded p-2">
-      <p className="text-neutral-400">{label}</p>
-      <p className="font-medium text-white">{value}</p>
     </div>
   )
 }

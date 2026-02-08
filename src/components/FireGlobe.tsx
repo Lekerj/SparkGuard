@@ -1,17 +1,18 @@
 /**
- * FireGlobe — Interactive 3D Earth globe showing fire detection hotspots.
+ * FireGlobe — Interactive 3D Earth globe showing live fire detection hotspots.
  *
  * Uses react-globe.gl (Three.js) with high-quality NASA Blue Marble textures.
- * Points are rendered from preprocessed per-country JSON data.
- * Globe auto-rotates until user interacts. Selecting a country zooms to it.
+ * Points are rendered from live NASA FIRMS VIIRS data.
+ * Perimeter polygons from WFIGS (US) and CWFIS (Canada).
  *
  * The globe fills its parent container completely (must have explicit height).
  */
 
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import GlobeGL from 'react-globe.gl'
-import type { CountryFireStats, FirePoint } from '@/types/fireData'
+import type { FirePoint } from '@/types/fireData'
 import type { WildfireEvent } from '@/types/wildfireEvent'
+import type { FirePerimeter } from '@/types/firePerimeter'
 
 // ─── Point data shape for react-globe.gl ────────────────────────────────────
 
@@ -28,24 +29,22 @@ interface GlobePoint {
   _confidence: number
   _date: string
   _daynight: string
-  _country?: string
-  _isCountryCenter?: boolean
 }
 
-// ─── Color by FRP ───────────────────────────────────────────────────────────
+// ─── Color by FRP — brighter, more visible colors ──────────────────────────
 
 function frpColor(frp: number): string {
-  if (frp > 200) return '#dc2626'
-  if (frp > 80) return '#ef4444'
-  if (frp > 20) return '#f59e0b'
-  return '#22c55e'
+  if (frp > 200) return 'rgba(255, 60, 40, 0.95)'    // intense red
+  if (frp > 80)  return 'rgba(255, 120, 30, 0.90)'   // orange
+  if (frp > 20)  return 'rgba(255, 200, 50, 0.85)'   // amber/yellow
+  return 'rgba(100, 220, 100, 0.80)'                  // green
 }
 
 function frpRadius(frp: number): number {
-  if (frp > 200) return 0.45
-  if (frp > 80) return 0.35
-  if (frp > 20) return 0.25
-  return 0.18
+  if (frp > 200) return 0.55
+  if (frp > 80) return 0.42
+  if (frp > 20) return 0.30
+  return 0.20
 }
 
 // ─── Texture URLs — use CDN directly for reliability ────────────────────────
@@ -59,35 +58,25 @@ const TEXTURES = {
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface FireGlobeProps {
+  /** Live FIRMS fire detection points */
   points: FirePoint[]
-  countries: CountryFireStats[]
-  focusCountry: CountryFireStats | null
-  onCountryClick?: (country: string) => void
   onPointSelect?: (event: WildfireEvent) => void
-  dateRange?: [string, string]
-  statusFilter?: string
   className?: string
-}
-
-/** Assign a status to a fire detection based on its date relative to 'now' (2024-12-31). */
-function inferStatus(date: string): 'historical' | 'active' | 'predicted' {
-  // We treat Q4 2024 as "active", everything before as "historical",
-  // and any detection with very high FRP in Dec as potentially "predicted" spread risk.
-  const month = parseInt(date.split('-')[1] ?? '1', 10)
-  if (month >= 11) return 'active'
-  if (month >= 9) return 'predicted'
-  return 'historical'
+  /** Fire perimeter polygons to render on the globe */
+  perimeters?: FirePerimeter[]
+  /** Whether to show perimeter polygons */
+  showPerimeters?: boolean
+  /** Callback when a perimeter polygon is clicked */
+  onPerimeterClick?: (perimeter: FirePerimeter) => void
 }
 
 export default function FireGlobe({
   points,
-  countries,
-  focusCountry,
-  onCountryClick,
   onPointSelect,
-  dateRange,
-  statusFilter,
   className = '',
+  perimeters = [],
+  showPerimeters = false,
+  onPerimeterClick,
 }: FireGlobeProps) {
   const globeRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -136,112 +125,50 @@ export default function FireGlobe({
     return () => clearTimeout(timer)
   }, [dimensions])
 
-  // ── Zoom to focused country ───────────────────────────────────────────
-  useEffect(() => {
-    if (!focusCountry || !globeRef.current) return
-    try {
-      const { center, bbox } = focusCountry
-      const latSpan = bbox.max_lat - bbox.min_lat
-      const lonSpan = bbox.max_lon - bbox.min_lon
-      const span = Math.max(latSpan, lonSpan)
-      const altitude = Math.min(Math.max(span / 30, 0.8), 3.5)
-
-      globeRef.current.pointOfView(
-        { lat: center.lat, lng: center.lon, altitude },
-        1000,
-      )
-
-      // Pause auto-rotate when viewing a country
-      try {
-        const controls = globeRef.current.controls()
-        if (controls) controls.autoRotate = false
-      } catch { /* */ }
-    } catch { /* scene not ready */ }
-  }, [focusCountry])
-
-  // ── Build point data ──────────────────────────────────────────────────
+  // ── Build point data from live FIRMS detections ───────────────────────
   const pointsData: GlobePoint[] = useMemo(() => {
-    if (points.length > 0) {
-      // Apply date range filter
-      let filtered = points
-      if (dateRange) {
-        const [start, end] = dateRange
-        filtered = filtered.filter(p => p.date >= start && p.date <= end)
-      }
-      // Apply status filter
-      if (statusFilter && statusFilter !== 'all') {
-        filtered = filtered.filter(p => inferStatus(p.date) === statusFilter)
-      }
-      return filtered.map((p, i) => ({
+    return points.map((p) => ({
+      lat: p.lat,
+      lng: p.lng,
+      color: frpColor(p.frp),
+      radius: frpRadius(p.frp),
+      altitude: 0.012,
+      label: `<div style="background:rgba(0,0,0,0.88);padding:10px 14px;border-radius:10px;font-size:11px;color:white;border:1px solid rgba(255,120,50,0.4);backdrop-filter:blur(12px);min-width:170px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+        <div style="font-weight:700;margin-bottom:6px;color:#ff6b3d;font-size:12px">🔥 Fire Detection</div>
+        <div style="margin-bottom:2px">FRP: <b style="color:#ff9040">${p.frp.toFixed(1)} MW</b></div>
+        <div style="margin-bottom:2px">Date: ${p.date}</div>
+        <div style="margin-bottom:2px">Confidence: ${p.confidence}%</div>
+        <div style="margin-bottom:2px">Brightness: ${p.brightness.toFixed(0)} K</div>
+        <div style="margin-bottom:2px">${p.daynight === 'D' ? '☀️ Daytime' : '🌙 Nighttime'}</div>
+        <div style="color:#888;margin-top:6px;font-size:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px">${p.lat.toFixed(3)}°, ${p.lng.toFixed(3)}°</div>
+      </div>`,
+      _frp: p.frp,
+      _brightness: p.brightness,
+      _confidence: p.confidence,
+      _date: p.date,
+      _daynight: p.daynight,
+    }))
+  }, [points])
+
+  // ── Pulsing rings on high-FRP fires for visual impact ─────────────────
+  const ringsData = useMemo(() => {
+    return points
+      .filter((p) => p.frp > 50)
+      .slice(0, 80)               // cap at 80 rings for performance
+      .map((p) => ({
         lat: p.lat,
         lng: p.lng,
-        color: frpColor(p.frp),
-        radius: frpRadius(p.frp),
-        altitude: 0.008,
-        label: `<div style="background:rgba(0,0,0,0.85);padding:8px 12px;border-radius:8px;font-size:11px;color:white;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(8px);min-width:160px">
-          <div style="font-weight:600;margin-bottom:4px;color:#f97066">🔥 Fire Detection</div>
-          <div>FRP: <b>${p.frp} MW</b></div>
-          <div>Date: ${p.date}</div>
-          <div>Confidence: ${p.confidence}%</div>
-          <div>Brightness: ${p.brightness} K</div>
-          <div style="color:#888;margin-top:4px;font-size:10px">${p.lat.toFixed(3)}°, ${p.lng.toFixed(3)}°</div>
-        </div>`,
+        maxR: p.frp > 200 ? 3 : p.frp > 80 ? 2 : 1.2,
+        propagationSpeed: p.frp > 200 ? 2 : 1.5,
+        repeatPeriod: p.frp > 200 ? 800 : 1200,
         _frp: p.frp,
-        _brightness: p.brightness,
-        _confidence: p.confidence,
-        _date: p.date,
-        _daynight: p.daynight,
-        _country: focusCountry?.country,
       }))
-    }
-
-    // Country center markers
-    return countries
-      .filter((c) => c.detections_count > 50)
-      .map((c) => ({
-        lat: c.center.lat,
-        lng: c.center.lon,
-        color: frpColor(c.avg_frp),
-        radius: Math.min(0.3 + Math.log10(c.detections_count) * 0.12, 1.0),
-        altitude: 0.005,
-        label: `<div style="background:rgba(0,0,0,0.85);padding:8px 12px;border-radius:8px;font-size:11px;color:white;border:1px solid rgba(255,255,255,0.1);min-width:140px">
-          <div style="font-weight:600;margin-bottom:4px">${c.country}</div>
-          <div>${c.detections_count.toLocaleString()} detections</div>
-          <div>Avg FRP: ${c.avg_frp} MW</div>
-          <div style="color:#888;margin-top:2px;font-size:10px">Click to explore</div>
-        </div>`,
-        _frp: c.avg_frp,
-        _brightness: c.max_brightness,
-        _confidence: c.avg_confidence,
-        _date: c.date_range.earliest,
-        _daynight: 'D',
-        _country: c.country,
-        _isCountryCenter: true,
-      }))
-  }, [points, countries, focusCountry, dateRange, statusFilter])
-
-  // ── Selection ring ────────────────────────────────────────────────────
-  const ringsData = useMemo(() => {
-    if (!focusCountry) return []
-    return [{
-      lat: focusCountry.center.lat,
-      lng: focusCountry.center.lon,
-      maxR: 5,
-      propagationSpeed: 2,
-      repeatPeriod: 1500,
-    }]
-  }, [focusCountry])
+  }, [points])
 
   // ── Click handler ─────────────────────────────────────────────────────
   const handlePointClick = useCallback(
     (point: object) => {
       const p = point as GlobePoint
-
-      if (p._isCountryCenter) {
-        // Click on country center → zoom to country
-        if (p._country) onCountryClick?.(p._country)
-        return
-      }
 
       // Click on fire point → create a WildfireEvent and notify parent
       if (onPointSelect) {
@@ -253,8 +180,7 @@ export default function FireGlobe({
           confidence: p._confidence,
           intensity: p._frp,
           brightness: p._brightness,
-          country: p._country,
-          status: inferStatus(p._date),
+          status: 'active',
           daynight: p._daynight as 'D' | 'N',
         }
         onPointSelect(event)
@@ -268,7 +194,85 @@ export default function FireGlobe({
         )
       } catch { /* */ }
     },
-    [countries, onCountryClick, onPointSelect],
+    [onPointSelect],
+  )
+
+  // ── Perimeter polygon data ────────────────────────────────────────────
+  const polygonsData = useMemo(() => {
+    if (!showPerimeters || perimeters.length === 0) return []
+    return perimeters.map((p) => ({
+      geometry: p.geometry,
+      _perimeter: p,
+    }))
+  }, [perimeters, showPerimeters])
+
+  const handlePolygonClick = useCallback(
+    (polygon: object) => {
+      const d = polygon as { _perimeter: FirePerimeter }
+      if (!d._perimeter) return
+      onPerimeterClick?.(d._perimeter)
+
+      // Fly to the perimeter
+      try {
+        globeRef.current?.pointOfView(
+          { lat: d._perimeter.lat, lng: d._perimeter.lng, altitude: 1.0 },
+          800,
+        )
+      } catch { /* */ }
+    },
+    [onPerimeterClick],
+  )
+
+  const polygonCapColor = useCallback(
+    (d: object) => {
+      const peri = (d as { _perimeter: FirePerimeter })._perimeter
+      if (!peri) return 'rgba(255, 100, 50, 0.25)'
+      // Color by source
+      return peri.source === 'WFIGS'
+        ? 'rgba(239, 68, 68, 0.30)'   // red for US
+        : 'rgba(59, 130, 246, 0.30)'  // blue for Canada
+    },
+    [],
+  )
+
+  const polygonSideColor = useCallback(
+    (d: object) => {
+      const peri = (d as { _perimeter: FirePerimeter })._perimeter
+      return peri?.source === 'WFIGS'
+        ? 'rgba(239, 68, 68, 0.15)'
+        : 'rgba(59, 130, 246, 0.15)'
+    },
+    [],
+  )
+
+  const polygonStrokeColor = useCallback(
+    (d: object) => {
+      const peri = (d as { _perimeter: FirePerimeter })._perimeter
+      return peri?.source === 'WFIGS'
+        ? 'rgba(239, 68, 68, 0.8)'
+        : 'rgba(59, 130, 246, 0.8)'
+    },
+    [],
+  )
+
+  const polygonLabel = useCallback(
+    (d: object) => {
+      const peri = (d as { _perimeter: FirePerimeter })._perimeter
+      if (!peri) return ''
+      const contained = peri.percentContained != null ? `${peri.percentContained}%` : 'N/A'
+      return `<div style="background:rgba(0,0,0,0.88);padding:8px 12px;border-radius:8px;font-size:11px;color:white;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(8px);min-width:180px">
+        <div style="font-weight:600;margin-bottom:4px;color:${peri.source === 'WFIGS' ? '#f87171' : '#60a5fa'}">
+          🔥 ${peri.name}
+        </div>
+        <div>Source: <b>${peri.source === 'WFIGS' ? 'US (WFIGS)' : 'Canada (CWFIS)'}</b></div>
+        <div>Area: <b>${peri.acres.toLocaleString(undefined, { maximumFractionDigits: 0 })} acres</b></div>
+        <div>Contained: <b>${contained}</b></div>
+        ${peri.region ? `<div>Region: ${peri.region}</div>` : ''}
+        ${peri.discoveryDate ? `<div>Discovered: ${peri.discoveryDate}</div>` : ''}
+        <div style="color:#888;margin-top:4px;font-size:10px">${peri.lat.toFixed(3)}°, ${peri.lng.toFixed(3)}°</div>
+      </div>`
+    },
+    [],
   )
 
   return (
@@ -312,10 +316,26 @@ export default function FireGlobe({
           pointLabel="label"
           onPointClick={handlePointClick}
           ringsData={ringsData}
-          ringColor={() => '#f97066'}
+          ringColor={(d: object) => {
+            const frp = (d as { _frp: number })._frp ?? 50
+            if (frp > 200) return 'rgba(255, 60, 40, 0.7)'
+            if (frp > 80) return 'rgba(255, 140, 40, 0.5)'
+            return 'rgba(255, 200, 80, 0.4)'
+          }}
           ringMaxRadius="maxR"
           ringPropagationSpeed="propagationSpeed"
           ringRepeatPeriod="repeatPeriod"
+          // ── Perimeter polygons ─────────────────────────────────
+          polygonsData={polygonsData}
+          polygonGeoJsonGeometry="geometry"
+          polygonCapColor={polygonCapColor}
+          polygonSideColor={polygonSideColor}
+          polygonStrokeColor={polygonStrokeColor}
+          polygonAltitude={0.005}
+          polygonCapCurvatureResolution={6}
+          polygonLabel={polygonLabel}
+          polygonsTransitionDuration={400}
+          onPolygonClick={handlePolygonClick}
         />
       )}
     </div>

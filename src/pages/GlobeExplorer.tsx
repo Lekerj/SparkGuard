@@ -2,9 +2,9 @@
  * GlobeExplorer — Main "Globe Explorer" page.
  *
  * Full-viewport layout:
- *   Left: 3D globe (dominant)
- *   Right: Info panel (fixed ~420px)
- *   Top-left: Globe controls overlay (time slider, toggles, search)
+ *   Left: 3D globe (dominant) — live FIRMS fire detections + perimeters
+ *   Right: Info panel (fixed ~420px) — responder view with MET Norway weather
+ *   Top-left: Globe controls overlay (time range, perimeters, search)
  */
 
 import { useState, useCallback } from 'react'
@@ -13,23 +13,38 @@ import FireGlobe from '@/components/FireGlobe'
 import GlobeControls from '@/components/GlobeControls'
 import InfoPanel from '@/components/InfoPanel'
 import { useFireData } from '@/hooks/useFireData'
+import { useFirePerimeters } from '@/hooks/useFirePerimeters'
 import type { WildfireEvent } from '@/types/wildfireEvent'
+import type { FirePerimeter } from '@/types/firePerimeter'
+
+const TIME_RANGE_LABELS = {
+  '24h': '24 hours',
+  '48h': '48 hours',
+  '7d': '7 days',
+} as const
 
 export default function GlobeExplorer() {
   const {
-    countries,
-    summary,
-    selectedCountry,
-    selectedPoints,
+    points,
+    totalDetections,
     isLoading,
-    isLoadingPoints,
-    isMock,
-    selectCountry,
+    error,
+    timeRange,
+    setTimeRange,
+    refresh,
+    fetchedAt,
   } = useFireData()
 
+  const {
+    perimeters,
+    isLoading: isLoadingPerimeters,
+    source: perimeterSource,
+    setSource: setPerimeterSource,
+    showPerimeters,
+    totalCount: perimeterCount,
+  } = useFirePerimeters()
+
   const [selectedEvent, setSelectedEvent] = useState<WildfireEvent | null>(null)
-  const [dateRange, setDateRange] = useState<[string, string]>(['2024-01-01', '2024-12-31'])
-  const [statusFilter, setStatusFilter] = useState<'all' | 'historical' | 'active' | 'predicted'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Convert a fire point to a WildfireEvent for the info panel
@@ -37,26 +52,27 @@ export default function GlobeExplorer() {
     setSelectedEvent(event)
   }, [])
 
-  // Handle country click from globe or panel
-  const handleCountrySelect = useCallback((countryName: string | null) => {
-    selectCountry(countryName)
-    if (!countryName) setSelectedEvent(null)
-  }, [selectCountry])
-
-  // Search/jump to location
+  // Search (simple coordinate jump or placeholder for future geocoding)
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query)
-    const q = query.toLowerCase().trim()
-    if (!q) return
+  }, [])
 
-    // Try matching a country
-    const match = countries.find(c =>
-      c.country.toLowerCase().includes(q)
-    )
-    if (match) {
-      handleCountrySelect(match.country)
+  // Handle perimeter polygon click → create WildfireEvent for info panel
+  const handlePerimeterClick = useCallback((perimeter: FirePerimeter) => {
+    const event: WildfireEvent = {
+      id: `perimeter-${perimeter.id}`,
+      lat: perimeter.lat,
+      lon: perimeter.lng,
+      startDate: perimeter.discoveryDate ?? new Date().toISOString().split('T')[0],
+      confidence: perimeter.percentContained ?? 50,
+      intensity: perimeter.acres / 100, // rough FRP proxy from acres
+      country: perimeter.source === 'WFIGS' ? 'United States' : 'Canada',
+      region: perimeter.region ?? undefined,
+      status: 'active',
+      geometry: perimeter.geometry,
     }
-  }, [countries, handleCountrySelect])
+    setSelectedEvent(event)
+  }, [])
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-neutral-950">
@@ -74,35 +90,36 @@ export default function GlobeExplorer() {
           }
         >
           <FireGlobe
-            points={selectedPoints}
-            countries={countries}
-            focusCountry={selectedCountry}
-            onCountryClick={handleCountrySelect}
+            points={points}
             onPointSelect={handlePointSelect}
-            dateRange={dateRange}
-            statusFilter={statusFilter}
+            perimeters={perimeters}
+            showPerimeters={showPerimeters}
+            onPerimeterClick={handlePerimeterClick}
             className="w-full h-full"
           />
         </ErrorBoundary>
 
         {/* ── Overlay controls (top-left) ────────────────────────── */}
         <GlobeControls
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
           searchQuery={searchQuery}
           onSearch={handleSearch}
-          totalCountries={countries.length}
-          totalDetections={summary?.total_detections ?? 0}
-          isMock={isMock}
+          totalDetections={totalDetections}
           isLoading={isLoading}
+          error={error}
+          fetchedAt={fetchedAt}
+          onRefresh={refresh}
+          perimeterSource={perimeterSource}
+          onPerimeterSourceChange={setPerimeterSource}
+          perimeterCount={perimeterCount}
+          isLoadingPerimeters={isLoadingPerimeters}
         />
 
         {/* ── Bottom data label ──────────────────────────────────── */}
         <div className="absolute bottom-4 left-4 flex items-center gap-2 pointer-events-none">
           <span className="text-[10px] text-neutral-400 bg-neutral-950/80 backdrop-blur-sm px-3 py-1.5 rounded-full font-mono border border-neutral-800">
-            {isMock ? 'MOCK DATA' : 'MODIS 2024'} · {selectedPoints.length > 0 ? selectedPoints.length.toLocaleString() + ' pts' : countries.length + ' countries'}
+            FIRMS VIIRS · {totalDetections.toLocaleString()} detections · {TIME_RANGE_LABELS[timeRange]}
           </span>
         </div>
       </div>
@@ -110,15 +127,13 @@ export default function GlobeExplorer() {
       {/* ── Right info panel ───────────────────────────────────────── */}
       <div className="w-[420px] h-full flex-shrink-0 border-l border-neutral-800">
         <InfoPanel
-          countries={countries}
-          selectedCountry={selectedCountry}
           selectedEvent={selectedEvent}
-          onSelectCountry={handleCountrySelect}
           onClearEvent={() => setSelectedEvent(null)}
+          totalDetections={totalDetections}
           isLoading={isLoading}
-          isLoadingPoints={isLoadingPoints}
-          isMock={isMock}
-          totalDetections={summary?.total_detections}
+          error={error}
+          timeRangeLabel={TIME_RANGE_LABELS[timeRange]}
+          fetchedAt={fetchedAt}
         />
       </div>
     </div>

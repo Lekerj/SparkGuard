@@ -1,48 +1,10 @@
 /**
- * SparkGuard — Shared types used by both the preprocessing pipeline and the UI.
+ * SparkGuard — Shared fire data types for the UI.
  *
- * These types mirror scripts/types.ts but live inside src/ so the browser-side
- * code can import them without reaching outside the Vite root.
+ * These types are used by the live NASA FIRMS pipeline and globe rendering.
  */
 
-// ─── Per-country aggregated stats (from country_fire_stats_2024.json) ───────
-
-export interface CountryFireStats {
-  country: string
-  detections_count: number
-  total_frp: number
-  avg_frp: number
-  avg_confidence: number
-  max_brightness: number
-  day_count: number
-  night_count: number
-  date_range: {
-    earliest: string
-    latest: string
-  }
-  bbox: {
-    min_lat: number
-    max_lat: number
-    min_lon: number
-    max_lon: number
-  }
-  center: {
-    lat: number
-    lon: number
-  }
-}
-
-// ─── Summary file shape ─────────────────────────────────────────────────────
-
-export interface CountryFireStatsFile {
-  generated_at: string
-  year: number
-  total_countries: number
-  total_detections: number
-  countries: CountryFireStats[]
-}
-
-// ─── Downsampled fire point ─────────────────────────────────────────────────
+// ─── Downsampled fire point (used by FIRMS service + globe) ─────────────────
 
 export interface FirePoint {
   lat: number
@@ -54,33 +16,9 @@ export interface FirePoint {
   daynight: string
 }
 
-// ─── Per-country points file shape ──────────────────────────────────────────
-
-export interface CountryPointsFile {
-  country: string
-  total_raw: number
-  sampled: number
-  points: FirePoint[]
-}
-
-// ─── Legacy WildfireRecord (kept for mock fallback) ─────────────────────────
+// ─── Severity helpers ───────────────────────────────────────────────────────
 
 export type WildfireSeverity = 'Low' | 'Moderate' | 'High' | 'Extreme'
-
-export interface WildfireRecord {
-  id: string
-  name: string
-  region: string
-  coordinates: { lat: number; lon: number }
-  startedAt: string
-  updatedAt: string
-  severity: WildfireSeverity
-  areaBurnedHa?: number
-  confidence: number
-  source: string
-  brightness?: number
-  frp?: number
-}
 
 /** Map FRP to a severity label */
 export function frpToSeverity(frp: number): WildfireSeverity {
