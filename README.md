@@ -193,27 +193,15 @@ SparkGuard is a **software platform** that:
 
 | Name | Role |
 |------|------|
-| [TEAM_MEMBER_1] | Software Developer |
-| [TEAM_MEMBER_2] | Software Developer |
-| [TEAM_MEMBER_3] | Software Developer |
+| [Ahmed E.] | Software Developer |
+| [Ahmed G.] | Software Developer |
+| [Mohammed J.] | Software Developer |
 
 ---
 
 ## License
 
 MIT
-
----
-
-## Contact / Demo
-
-| Resource | Link |
-|----------|------|
-| **Live Demo** | [DEMO_LINK] |
-| **Pitch Deck** | [PITCH_DECK_LINK] |
-| **Business Model Canvas** | [BMC_LINK] |
-| **Figma Prototype** | [FIGMA_LINK] |
-| **Contact Email** | [CONTACT_EMAIL] |
 
 ---
 
@@ -233,9 +221,4 @@ The core innovation is **integration and interpretation** — bringing fragmente
   <strong>SparkGuard</strong> · Built for <a href="#">Upstart @ GCES Concordia</a> · Health & Wellness · Smart Systems
 </p>
 
-<!-- Reference Links (update with actual URLs) -->
-[DEMO_LINK]: #
-[PITCH_DECK_LINK]: #
-[BMC_LINK]: #
-[FIGMA_LINK]: #
-[CONTACT_EMAIL]: mailto:contact@example.com
+
