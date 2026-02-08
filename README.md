@@ -217,9 +217,9 @@ src/
 
 | Name | Role |
 |------|------|
-| [TEAM_MEMBER_1] | Full-Stack Engineer |
-| [TEAM_MEMBER_2] | Geospatial Analyst |
-| [TEAM_MEMBER_3] | Product & UX |
+| [Ahmed E.] | Software Developer |
+| [Ahmed G.] | Software Developer |
+| [Mohammed J.] | Software Developer |
 
 ---
 
@@ -229,6 +229,20 @@ MIT
 
 ---
 
+## Why This Is Feasible
+
+SparkGuard is designed around **existing, accessible infrastructure**:
+
+1. **Public satellite data is available today** — NASA FIRMS, Sentinel, and others provide free or low-cost fire detection feeds.
+2. **Modular integrations** — the platform connects to external systems via standard APIs and export formats, minimizing custom development.
+3. **AI is assistive, not autonomous** — we use proven classification techniques with human oversight, avoiding regulatory and liability complexity of fully autonomous systems.
+
+The core innovation is **integration and interpretation** — bringing fragmented data into a unified view and translating it into actionable guidance for responders.
+
+---
+
 <p align="center">
   <strong>SparkGuard</strong> · Built for <a href="#">Upstart @ GCES Concordia</a> · Health & Wellness · Smart Systems
 </p>
+
+
